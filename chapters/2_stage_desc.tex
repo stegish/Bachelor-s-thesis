@@ -1,0 +1,139 @@
+% Capitolo 2 — Descrizione dello stage
+\chapter{Descrizione dello stage}
+\label{chap:descrizione-stage}
+
+\section{Introduzione al progetto}
+
+Negli ultimi anni il settore manifatturiero ha intrapreso un percorso di digitalizzazione incentrato sul paradigma dell’\textit{Industria~4.0}. In tale contesto il presente 
+tirocinio, svolto presso l’azienda \textit{Devess~S.r.l.}, si propone di realizzare un \textit{proof‑of‑concept} (\gls{PoC}) da implementare in un software gestionale 
+\textit{cross‑platform} sviluppato con Flutter, supportato da un back‑end \textit{Python}/FastAPI con persistenza in MongoDB e integrazione di un modello linguistico di grandi 
+dimensioni (\gls{LLM}). L’obiettivo primario è consentire al management di individuare tempestivamente criticità operative, code ai macchinari, \gls{leadtime}, anomalie, colli di 
+bottiglia e di ricevere suggerimenti automatici di ottimizzazione basati sui dati.
+
+Il progetto si articola in otto macro‑fasi (cfr. sezione~\ref{subsec:pianificazione}), per un totale di 300~ore, e combina attività di analisi dati, \textit{prompt engineering}, 
+sviluppo \textit{mobile} e validazione sperimentale. Il tutor aziendale, Nicola Romano, ha seguito l’avanzamento mediante allineamenti settimanali sui risultati ottenuti, 
+facilitando l’accesso alle risorse necessarie.
+
+\section{Analisi preventiva dei rischi}
+
+\begin{risk}{Qualità dei dati in MongoDB}
+\riskdescription{I dati storici potrebbero presentare valori mancanti o incoerenti, compromettendo l’accuratezza delle analisi e dei suggerimenti generati dall’intelligenza artificiale.}
+\risksolution{Definire procedure di \textit{data cleaning} automatizzate e introdurre controlli di validazione a campione.}
+\end{risk}
+
+\begin{risk}{Costi e limiti di utilizzo delle \gls{API} LLM}
+\riskdescription{L’uso intensivo delle \gls{API} di ChatGPT potrebbe superare il budget assegnato o incorrere in \textit{rate‑limit}, rendendo la funzionalità economicamente insostenibile.}
+\risksolution{Svolgere un’accurata analisi dei costi e monitorare i consumi del prototipo tramite \textit{dashboard} dedicata, al fine di stimare il costo medio d’utilizzo e adeguare di conseguenza il pricing del software.}
+\end{risk}
+
+\begin{risk}{Non‑deterministicità delle risposte LLM}
+\riskdescription{La natura probabilistica del \gls{LLM} può produrre risposte diverse a parità di input, introducendo possibili incoerenze o inesattezze nei suggerimenti operativi.}
+\risksolution{Utilizzare istruzioni precise tramite \textit{prompt engineering}, e prevedere un workflow di approvazione manuale per le decisioni critiche.}
+\end{risk}
+
+\begin{risk}{Scalabilità del back‑end}
+\riskdescription{L’aumento del volume di dati o di richieste simultanee potrebbe ridurre le prestazioni degli endpoint FastAPI.}
+\risksolution{Progettare l’architettura con attenzione alla scalabilità, selezionare il deployment più adatto a un utilizzo su larga scala, adottare containerizzazione e bilanciamento del carico, prevedendo la replica del database e test di \textit{stress}.}
+\end{risk}
+
+\begin{risk}{Usabilità dell’interfaccia Flutter}
+\riskdescription{Un’interfaccia poco intuitiva potrebbe vanificare i benefici dell’automazione, rallentando l’adozione da parte del management.}
+\risksolution{Applicare le linee guida Material~3, condurre \textit{usability test} con utenti interni e iterare sulle funzionalità maggiormente critiche.}
+\end{risk}
+
+\newpage
+
+\section{Requisiti e obiettivi}
+
+\begin{center}
+    \rowcolors{1}{}{tableGray}
+    \begin{tabular}{|p{2.25cm}|p{12.00cm}|}
+    \hline
+    \rowcolor{tableGray}\textbf{Codice} & \textbf{Descrizione} \\
+    \hline
+    O01 & Dashboard Flutter che visualizzi code dei macchinari, \gls{leadtime} e colli di bottiglia in tempo reale, integrata nel gestionale mobile di Devess.\\
+    \hline
+    O02 & Integrazione di GPT come \gls{LLM} per restituire risposte e suggerimenti in linguaggio naturale basati sui dati.\\
+    \hline
+    O03 & Implementazione di funzioni analitiche in grado di identificare anomalie nei processi produttivi.\\
+    \hline
+    O04 & Protezione dei dati sensibili con meccanismi di cifratura e controllo degli accessi basato su ruoli.\\
+    \hline
+    O05 & Interfaccia utente studiata in modo accurato, fruibile anche da operatori non specializzati.\\
+    \hline
+    D01 & Realizzazione di una versione \textit{web} dell’applicazione, integrata nel gestionale Devess.\\
+    \hline
+    D02 & Possibilità di interagire con un chatbot basato su \gls{LLM} per richiedere chiarimenti o soluzioni mirate.\\
+    \hline
+    D03 & Notifiche push o e‑mail proattive al manifestarsi di problemi o rallentamenti nella produzione.\\
+    \hline
+    F01 & Sincronizzazione offline con riallineamento automatico al ripristino della connettività.\\
+    \hline
+    F02 & Animazioni fluide e tempi di caricamento percepiti veloci.\\
+    \hline
+    \end{tabular}
+    \captionof{table}{Requisiti e obiettivi definiti per il tirocinio.}
+    \label{tab:requisiti_obbiettivi}
+\end{center}
+
+\section{Pianificazione}
+\label{subsec:pianificazione}
+
+Il lavoro è suddiviso in otto settimane; ciascuna prevede attività specifiche, \textit{milestone} e momenti di verifica con il tutor aziendale.
+
+\begin{enumerate}
+    \item \textbf{Settimana~1 — Onboarding e configurazione ambienti (40~h)}
+        \begin{itemize}
+            \item Configurazione degli ambienti \textit{Python}/FastAPI, Flutter e MongoDB.
+            \item Studio delle \gls{API} di ChatGPT e definizione degli \textit{use case} AI.
+        \end{itemize}
+    \item \textbf{Settimana~2 — Prompt engineering e integrazione base LLM (40~h)}
+        \begin{itemize}
+            \item Applicazione di tecniche di \textit{prompt engineering}.
+            \item Prima integrazione delle \gls{API} LLM con tracciamento di costi e latenza.
+        \end{itemize}
+    \item \textbf{Settimana~3 — Modellazione dati e MongoDB (40~h)}
+        \begin{itemize}
+            \item Definizione dello schema NoSQL per macchinari e produzione.
+            \item Importazione e indicizzazione dei dati aziendali, con politiche di sicurezza.
+        \end{itemize}
+    \item \textbf{Settimana~4 — Back‑end Python e algoritmi analitici (40~h)}
+        \begin{itemize}
+            \item Realizzazione degli endpoint CRUD.
+            \item Sviluppo degli algoritmi per code, \gls{leadtime} e colli di bottiglia.
+        \end{itemize}
+    \item \textbf{Settimana~5 — Validazione algoritmi e suggerimenti AI (40~h)}
+        \begin{itemize}
+            \item Valutazione del corretto funzionamento degli algoritmi di analisi dati.
+            \item Integrazione con ChatGPT per suggerimenti contestuali.
+        \end{itemize}
+    \item \textbf{Settimana~6 — Automazione e performance (40~h)}
+        \begin{itemize}
+            \item Scheduler per analisi periodiche.
+            \item Ottimizzazione delle query e monitoraggio dei costi operativi.
+        \end{itemize}
+    \item \textbf{Settimana~7 — UI e dashboard Flutter (40~h)}
+        \begin{itemize}
+            \item Progettazione del \textit{design system} secondo Material~3.
+            \item Implementazione degli schermi di monitoraggio e test multi‑device.
+        \end{itemize}
+    \item \textbf{Settimana~8 — QA, MLOps e rilascio (20~h)}
+        \begin{itemize}
+            \item Test end‑to‑end e preparazione del pacchetto di rilascio.
+            \item Stesura della documentazione tecnica conclusiva.
+        \end{itemize}
+\end{enumerate}
+
+\subsection{Modalità di interazione con il tutor aziendale}
+
+Sono previsti incontri di avanzamento con il tutor ogni settimana, in presenza o da remoto, per discutere le criticità emerse, verificare il rispetto del piano e concordare eventuali adeguamenti.
+
+\subsection{Deliverable previsti}
+
+\begin{itemize}
+    \item \textbf{PoC} della dashboard gestionale completa di analisi e suggerimenti AI.
+    \item Report tecnico finale strutturato nei capitoli di introduzione, architettura, metodologie, risultati e conclusioni.
+    \item Codice sorgente versionato su repository Git proprietaria.
+\end{itemize}
+
+\newpage
