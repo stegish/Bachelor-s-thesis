@@ -17,28 +17,28 @@ facilitando l’accesso alle risorse necessarie.
 \section{Analisi preventiva dei rischi}
 
 \begin{risk}{Qualità dei dati in MongoDB}
-\riskdescription{I dati storici potrebbero presentare valori mancanti o incoerenti, compromettendo l’accuratezza delle analisi e dei suggerimenti generati dall’intelligenza artificiale.}
-\risksolution{Definire procedure di \textit{data cleaning} automatizzate e introdurre controlli di validazione a campione.}
+\riskdescription{I dati storici potrebbero presentare valori mancanti o incoerenti, compromettendo l’accuratezza delle analisi e dei suggerimenti generati dall’intelligenza artificiale}
+\risksolution{Definire procedure di \textit{data cleaning} automatizzate e introdurre controlli di validazione a campione}
 \end{risk}
 
 \begin{risk}{Costi e limiti di utilizzo delle \gls{API} LLM}
-\riskdescription{L’uso intensivo delle \gls{API} di ChatGPT potrebbe superare il budget assegnato o incorrere in \textit{rate‑limit}, rendendo la funzionalità economicamente insostenibile.}
-\risksolution{Svolgere un’accurata analisi dei costi e monitorare i consumi del prototipo tramite \textit{dashboard} dedicata, al fine di stimare il costo medio d’utilizzo e adeguare di conseguenza il pricing del software.}
+\riskdescription{L’uso intensivo delle \gls{API} di ChatGPT potrebbe superare il budget assegnato o incorrere in \textit{rate‑limit}, rendendo la funzionalità economicamente insostenibile}
+\risksolution{Svolgere un’accurata analisi dei costi e monitorare i consumi del prototipo tramite \textit{dashboard} dedicata, al fine di stimare il costo medio d’utilizzo e adeguare di conseguenza il pricing del software}
 \end{risk}
 
-\begin{risk}{Non‑deterministicità delle risposte LLM}
-\riskdescription{La natura probabilistica del \gls{LLM} può produrre risposte diverse a parità di input, introducendo possibili incoerenze o inesattezze nei suggerimenti operativi.}
-\risksolution{Utilizzare istruzioni precise tramite \textit{prompt engineering}, e prevedere un workflow di approvazione manuale per le decisioni critiche.}
+\begin{risk}{non-determinismo delle risposte da parte del LLM}
+\riskdescription{La natura probabilistica del \gls{LLM} può produrre risposte diverse a parità di input, introducendo possibili incoerenze o inesattezze nei suggerimenti operativi}
+\risksolution{Utilizzare istruzioni precise tramite \textit{prompt engineering}, e prevedere un workflow di approvazione manuale per le decisioni critiche}
 \end{risk}
 
 \begin{risk}{Scalabilità del back‑end}
-\riskdescription{L’aumento del volume di dati o di richieste simultanee potrebbe ridurre le prestazioni degli endpoint FastAPI.}
-\risksolution{Progettare l’architettura con attenzione alla scalabilità, selezionare il deployment più adatto a un utilizzo su larga scala, adottare containerizzazione e bilanciamento del carico, prevedendo la replica del database e test di \textit{stress}.}
+\riskdescription{L’aumento del volume di dati o di richieste simultanee potrebbe ridurre le prestazioni degli endpoint FastAPI}
+\risksolution{Progettare l’architettura con attenzione alla scalabilità, selezionare il deployment più adatto a un utilizzo su larga scala, adottare containerizzazione e bilanciamento del carico, prevedendo la replica del database e test di \textit{stress}}
 \end{risk}
 
 \begin{risk}{Usabilità dell’interfaccia Flutter}
-\riskdescription{Un’interfaccia poco intuitiva potrebbe vanificare i benefici dell’automazione, rallentando l’adozione da parte del management.}
-\risksolution{Applicare le linee guida Material~3, condurre \textit{usability test} con utenti interni e iterare sulle funzionalità maggiormente critiche.}
+\riskdescription{Un’interfaccia poco intuitiva potrebbe vanificare i benefici dell’automazione, rallentando l’adozione da parte del management}
+\risksolution{Applicare le linee guida Material~3, condurre \textit{usability test} con utenti interni e iterare sulle funzionalità maggiormente critiche}
 \end{risk}
 
 \newpage
