@@ -10,10 +10,12 @@ Di seguito i casi d'uso definitivi, suddivisi per priorità.
 %--------------------------------------------------------------------------
 % Casi d'uso obbligatori
 %--------------------------------------------------------------------------
+\newpage
+
 \subsection{Casi d'uso obbligatori}
 I seguenti casi d'uso rappresentano le funzionalità fondamentali che il sistema deve necessariamente implementare per soddisfare i requisiti minimi del progetto.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[alt={Diagramma UML Autenticazione Utente}, height=6cm]{img/usecase/UC1+UC1.1.png}
     \caption{UC1 + UC1.1.}
@@ -29,13 +31,15 @@ I seguenti casi d'uso rappresentano le funzionalità fondamentali che il sistema
 \label{uc:uc1_login}
 \end{usecase}
 
-\begin{usecase}{1.1}{Visualizzazione credenziali Errate}
+\begin{usecase}{1.1}{Visualizzazione Credenziali Errate}
 \usecaseactors{Utente non autenticato}
 \usecasepre{L'utente si trova alla schermata di login.}
 \usecasedesc{Il Sistema verifica le credenziali inserite e, se scorrette, mostra un messaggio di errore.}
-\usecasepost{L'utente puo riprovare reinserendo le credenziali.}
+\usecasepost{L'utente può riprovare reinserendo le credenziali.}
 \label{uc:uc1.1_errore_login}
 \end{usecase}
+
+\newpage
 
 \begin{figure}[htbp]
     \centering
@@ -53,6 +57,8 @@ I seguenti casi d'uso rappresentano le funzionalità fondamentali che il sistema
 \label{uc:uc2_grafico}
 \end{usecase}
 
+\newpage
+
 \begin{figure}[htbp]
     \centering
     \includegraphics[alt={Diagramma UML Visualizzazione Lista Anomalie}, height=7cm]{img/usecase/UC3+UC4+UC7.png}
@@ -66,25 +72,28 @@ I seguenti casi d'uso rappresentano le funzionalità fondamentali che il sistema
 \usecasedesc{Il Sistema elenca tutte le anomalie rilevate.}
 \usecasepost{La lista è disponibile per ulteriori approfondimenti.}
 \usecasealt{Se non esistono anomalie nel periodo selezionato, viene mostrato un messaggio informativo (\hyperref[uc:uc3.1_lista_anomalie_vuota]{UC3.1}).}
-\usecasealt{Se il sistema non riesce a recuperare i dati viene visualizzato un errore (\hyperref[uc:uc7_errore_dati]{UC7}).}
+\usecasealt{Se il sistema non riesce a recuperare i dati, viene visualizzato un errore (\hyperref[uc:uc7_errore_dati]{UC7}).}
 \label{uc:uc3_lista_anomalie}
 \end{usecase}
 
 \begin{usecase}{3.1}{Visualizzazione Avviso Lista Vuota}
 \usecaseactors{Utente}
-\usecasepre{Sono state eseguite analisi sui dati.}
-\usecasedesc{Il Sistema elenca tutte le anomalie rilevate.}
-\usecasepost{Non ci sono anomalie rilevate.}
+\usecasepre{Il Sistema notifica che non sono state rilevate anomalie.}
+\usecasedesc{Viene visualizzato un avviso indicando l'assenza di anomalie.}
 \label{uc:uc3.1_lista_anomalie_vuota}
 \end{usecase}
+
+\newpage
 
 \begin{usecase}{4}{Dettaglio Anomalia}
 \usecaseactors{Utente}
 \usecasepre{L'utente ha selezionato una specifica anomalia dalla lista.}
-\usecasedesc{Il Sistema visualizza grafici e log di dettaglio relativi all'anomalia scelta.}
+\usecasedesc{Il Sistema visualizza grafici e \gls{log} di dettaglio relativi all'anomalia scelta.}
 \usecasepost{L'utente può valutare la necessità di un intervento correttivo.}
 \label{uc:uc4_dettaglio_anomalia}
 \end{usecase}
+
+\newpage
 
 \begin{figure}[htbp]
     \centering
@@ -96,7 +105,7 @@ I seguenti casi d'uso rappresentano le funzionalità fondamentali che il sistema
 \begin{usecase}{5}{Visualizzazione Soluzione Proposta}
 \usecaseactors{Utente}
 \usecasepre{È stato selezionato un evento critico.}
-\usecasedesc{Viene visualizzata una proposta di soluzione.}
+\usecasedesc{Il Sistema visualizza una proposta di soluzione.}
 \usecasepost{La soluzione può essere accettata (\hyperref[uc:uc5.2_conferma_soluzione]{UC5.2}) o ignorata (\hyperref[uc:uc5.1_rifiuto_soluzione]{UC5.1}).}
 \label{uc:uc5_soluzione_proposta}
 \end{usecase}
@@ -109,6 +118,8 @@ I seguenti casi d'uso rappresentano le funzionalità fondamentali che il sistema
 \label{uc:uc5.1_rifiuto_soluzione}
 \end{usecase}
 
+\newpage
+
 \begin{usecase}{5.2}{Conferma Soluzione Proposta}
 \usecaseactors{Utente}
 \usecasepre{È visualizzata una soluzione proposta (\hyperref[uc:uc5_soluzione_proposta]{UC5}).}
@@ -117,6 +128,8 @@ I seguenti casi d'uso rappresentano le funzionalità fondamentali che il sistema
 \label{uc:uc5.2_conferma_soluzione}
 \end{usecase}
 
+\newpage
+
 \begin{figure}[htbp]
     \centering
     \includegraphics[alt={Diagramma UML Visualizzazione Soluzione Proposta}, height=7cm]{img/usecase/UC6+UC6.1+UC6.2.png}
@@ -124,11 +137,11 @@ I seguenti casi d'uso rappresentano le funzionalità fondamentali che il sistema
     \label{fig:uc6_visualizzazione_soluzione}
 \end{figure}
 
-\begin{usecase}{6}{Visualizzazione Soluzione Proposta}
+\begin{usecase}{6}{Visualizzazione Risultato Soluzione Proposta}
 \usecaseactors{Utente}
 \usecasepre{Il piano correttivo è stato approvato ed eseguito.}
 \usecasedesc{Il Sistema notifica all'Utente il risultato.}
-\usecasepost{In base al successo o no dell'applicazione, il messaggio puo essere positivo (\hyperref[uc:uc6.1_soluzione_ok]{UC6.1}) o negativo(\hyperref[uc:uc6.2_soluzione_err]{UC6.2}).}
+\usecasepost{In base all’esito dell’applicazione, il messaggio può essere positivo (\hyperref[uc:uc6.1_soluzione_ok]{UC6.1}) o negativo (\hyperref[uc:uc6.2_soluzione_err]{UC6.2}).}
 \label{uc:uc6_visualizzazione_soluzione}
 \end{usecase}
 
@@ -139,6 +152,8 @@ I seguenti casi d'uso rappresentano le funzionalità fondamentali che il sistema
 \usecasepost{L'anomalia viene marcata come risolta.}
 \label{uc:uc6.1_soluzione_ok}
 \end{usecase}
+
+\newpage
 
 \begin{usecase}{6.2}{Visualizzazione Errore Soluzione Proposta}
 \usecaseactors{Utente}
@@ -152,9 +167,11 @@ I seguenti casi d'uso rappresentano le funzionalità fondamentali che il sistema
 \usecaseactors{Utente}
 \usecasepre{L'utente è autenticato.}
 \usecasedesc{Il Sistema mostra un errore perché i dati non sono presenti.}
-\usecasepost{l'utente può aggiornare la pagina per riprovare a recuperare i dati.}
+\usecasepost{L'Utente può aggiornare la pagina per riprovare a recuperare i dati.}
 \label{uc:uc7_errore_dati}
 \end{usecase}
+
+\newpage
 
 %--------------------------------------------------------------------------
 % Casi d'uso desiderabili
@@ -177,6 +194,8 @@ I seguenti casi d'uso rappresentano le funzionalità desiderabili che il sistema
 \label{uc:uc8_domanda_nl}
 \end{usecase}
 
+\newpage
+
 \begin{figure}[htbp]
     \centering
     \includegraphics[alt={Diagramma UML Visualizzazione Risposta in Linguaggio Naturale}, height=7cm]{img/usecase/UC9+UC9.1+UC9.2.png}
@@ -194,13 +213,15 @@ I seguenti casi d'uso rappresentano le funzionalità desiderabili che il sistema
 \label{uc:uc9_risposta_nl}
 \end{usecase}
 
-\begin{usecase}{9.1}{Visualizzazione errore ricezione risposta in linguaggio naturale}
+\begin{usecase}{9.1}{Visualizzazione Errore Ricezione Risposta in Linguaggio Naturale}
 \usecaseactors{Utente}
 \usecasepre{È stata inoltrata una domanda (\hyperref[uc:uc8_domanda_nl]{UC8}).}
 \usecasedesc{Il sistema non riesce a recuperare la risposta.}
 \usecasepost{L'utente visualizza un errore che lo informa del problema.}
 \label{uc:uc9.1_errore_nl}
 \end{usecase}
+
+\newpage
 
 \begin{usecase}{9.2}{Visualizzazione domanda fuori contesto}
 \usecaseactors{Utente}
@@ -209,6 +230,8 @@ I seguenti casi d'uso rappresentano le funzionalità desiderabili che il sistema
 \usecasepost{L'utente può riformulare la domanda.}
 \label{uc:uc9.2_fuori_contesto_nl}
 \end{usecase}
+
+\newpage
 
 \begin{figure}[htbp]
     \centering
@@ -229,6 +252,9 @@ I seguenti casi d'uso rappresentano le funzionalità desiderabili che il sistema
 %--------------------------------------------------------------------------
 % Casi d'uso facoltativi
 %--------------------------------------------------------------------------
+
+\newpage
+
 \subsection{Casi d'uso facoltativi}
 I seguenti casi d'uso rappresentano le funzionalità facoltative che il sistema potrebbe implementare per migliorare l'esperienza dell'utente e fornire funzionalità aggiuntive.
 
@@ -241,11 +267,13 @@ I seguenti casi d'uso rappresentano le funzionalità facoltative che il sistema 
 
 \begin{usecase}{11}{Inserimento Comandi Tramite Linguaggio Naturale}
 \usecaseactors{Utente}
-\usecasepre{L'utente è autenticato e l'interfaccia dei comandi NL è attiva.}
+\usecasepre{L'utente è autenticato e l'interfaccia chat è attiva.}
 \usecasedesc{L'utente impartisce comandi operativi in linguaggio naturale; il Sistema li interpreta e li esegue.}
 \usecasepost{L'azione richiesta viene completata o ne viene comunicato l'esito.}
 \label{uc:uc11_comandi_nl}
 \end{usecase}
+
+\newpage
 
 %--------------------------------------------------------------------------
 % Tracciamento dei requisiti
@@ -264,12 +292,11 @@ Il tracciamento mostra la copertura dei requisiti funzionali (F) classificati co
     \hline
     FN1 & Login sicuro dell'utente                                    & UC1, UC1.1 \\ \hline
     FN2 & Visualizzare grafico dei dati di produzione                 & UC2, UC7   \\ \hline
-    FN3 & Elencare le anomalie rilevate                               & UC3, UC3.1, UC7 \\ \hline
-    FN4 & Mostrare il dettaglio di una anomalia                       & UC4        \\ \hline
-    FN5 & Presentare una soluzione proposta tramite LLM               & UC5, UC5.1, UC5.2 \\ \hline
-    FN6 & Gestire l'accettazione/rifiuto di una soluzione             & UC5.1, UC5.2 \\ \hline
-    FN7 & Notificare risultato applicazione soluzione                 & UC6, UC6.1, UC6.2 \\ \hline
-    FN8 & Gestire errori di recupero dati                             & UC7        \\ \hline
+    FN3 & \textit{Dashboard} anomalie rilevate                               & UC3, UC3.1, UC7, UC4 \\ \hline
+    FN4 & Presentare una soluzione proposta tramite LLM               & UC5, UC5.1, UC5.2 \\ \hline
+    FN5 & Gestire l'accettazione/rifiuto di una soluzione             & UC5.1, UC5.2 \\ \hline
+    FN6 & Notificare risultato applicazione soluzione                 & UC6, UC6.1, UC6.2 \\ \hline
+    FN7 & Gestire errori di recupero dati                             & UC7        \\ \hline
     FD1 & Inserire domande in linguaggio naturale                     & UC8        \\ \hline
     FD2 & Ricevere risposte in linguaggio naturale                    & UC9, UC9.1, UC9.2 \\ \hline
     FD3 & Visualizzare notifiche critiche                             & UC10       \\ \hline
