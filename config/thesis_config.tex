@@ -185,3 +185,12 @@
 
 % Break lines in code blocks whe using inputminted
 \setminted{breaklines}
+
+% --- Palette tabelle ----------------------------------------------------
+\definecolor{tablePrimary}{HTML}{366594}   % blu istituzionale (grafici)
+\colorlet  {tableSecondary}{tablePrimary!12!white} % tinta molto chiara
+\colorlet  {tableTertiary} {tablePrimary!4!white} % tinta quasi bianca
+
+\newcommand{\brandTableColors}{%
+  \rowcolors{2}{tableSecondary}{tableTertiary}%
+}
