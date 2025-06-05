@@ -11,6 +11,7 @@ from collections import defaultdict
 class ManufacturingAnalytics:
     def __init__(self, mongo_uri: str, database_name: str):
         """Initialize the analytics service with MongoDB connection"""
+
         self.client = MongoClient(mongo_uri)
         self.db = self.client[database_name]
         self.orders_collection = self.db['NewOrder']
@@ -90,7 +91,10 @@ class ManufacturingAnalytics:
             current_queue_length = len(machine.get('tablet', []))
             
             # Filter phases for this machine
-            machine_phases = phase_df[phase_df['phase_name'] == machine_name]
+            if 'phase_name' in phase_df.columns:
+                machine_phases = phase_df[phase_df['phase_name'] == machine_name]
+            else:
+                machine_phases = pd.DataFrame()
             
             if len(machine_phases) > 0:
                 metrics = {
@@ -175,6 +179,13 @@ class ManufacturingAnalytics:
     
     def generate_queue_analysis(self, phase_df: pd.DataFrame) -> pd.DataFrame:
         """Analyze queue patterns and bottlenecks"""
+        if phase_df.empty or 'phase_name' not in phase_df.columns:
+            return pd.DataFrame(columns=[
+                'phase_name', 'avg_queue_delay', 'queue_delay_std',
+                'max_queue_delay', 'total_jobs', 'total_quantity',
+                'is_bottleneck']
+            )
+
         # Group by machine and calculate queue metrics
         queue_metrics = phase_df.groupby('phase_name').agg({
             'queue_delay_hours': ['mean', 'std', 'max'],
@@ -197,7 +208,7 @@ class ManufacturingAnalytics:
         
         # Split operator strings and create individual records
         for _, row in phase_df.iterrows():
-            if row['operators']:
+            if 'operators' in row and row['operators']:
                 operators = row['operators'].split(',')
                 for operator in operators:
                     operator = operator.strip()
@@ -265,12 +276,18 @@ class ManufacturingAnalytics:
             'completed_orders': len([o for o in orders if o.get('orderStatus', {}).get('$numberInt') == '4']),
             'active_machines': len([m for m in machines if m.get('macchinarioActive', False)]),
             'total_machines': len(machines),
-            'avg_order_lead_time': order_timeline['lead_time_days'].mean(),
-            'on_time_delivery_rate': (order_timeline['on_time'].sum() / len(order_timeline[order_timeline['on_time'].notna()]) * 100) if len(order_timeline[order_timeline['on_time'].notna()]) > 0 else 0,
-            'avg_machine_utilization': machine_metrics['utilization_percentage'].mean(),
-            'avg_machine_efficiency': machine_metrics['efficiency_percentage'].mean(),
+            'avg_order_lead_time': order_timeline['lead_time_days'].mean() if 'lead_time_days' in order_timeline else None,
+            'on_time_delivery_rate': (
+                order_timeline['on_time'].sum() / len(order_timeline[order_timeline['on_time'].notna()]) * 100
+            ) if 'on_time' in order_timeline and len(order_timeline[order_timeline['on_time'].notna()]) > 0 else 0,
+            'avg_machine_utilization': machine_metrics['utilization_percentage'].mean() if 'utilization_percentage' in machine_metrics else None,
+            'avg_machine_efficiency': machine_metrics['efficiency_percentage'].mean() if 'efficiency_percentage' in machine_metrics else None,
             'total_operators': len(operator_performance) if len(operator_performance) > 0 else 0,
-            'bottleneck_machines': queue_analysis[queue_analysis['is_bottleneck']]['phase_name'].tolist()
+            'bottleneck_machines': (
+                queue_analysis.loc[queue_analysis['is_bottleneck'], 'phase_name'].tolist()
+                if 'phase_name' in queue_analysis.columns and 'is_bottleneck' in queue_analysis.columns
+                else []
+            )
         }
         
         with open(f'{output_dir}/summary_statistics.json', 'w') as f:
