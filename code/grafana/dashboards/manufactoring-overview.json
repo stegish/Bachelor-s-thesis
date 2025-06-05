@@ -1,0 +1,245 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Manufacturing Analytics Overview",
+    "tags": ["manufacturing", "analytics", "overview"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Total Orders",
+        "type": "stat",
+        "targets": [
+          {
+            "datasource": {
+              "type": "marcusolsson-csv-datasource",
+              "uid": "manufacturing-csv"
+            },
+            "refId": "A",
+            "csvFileName": "order_timeline.csv",
+            "csvWave": []
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null}
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["count"],
+            "fields": ""
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Machine Utilization",
+        "type": "gauge",
+        "targets": [
+          {
+            "datasource": {
+              "type": "marcusolsson-csv-datasource",
+              "uid": "manufacturing-csv"
+            },
+            "refId": "A",
+            "csvFileName": "machine_metrics.csv",
+            "csvWave": []
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 6, "y": 0},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 50},
+                {"color": "green", "value": 80}
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["mean"],
+            "fields": "/utilization_percentage/"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "On-Time Delivery Rate",
+        "type": "stat", 
+        "targets": [
+          {
+            "datasource": {
+              "type": "marcusolsson-csv-datasource",
+              "uid": "manufacturing-csv"
+            },
+            "refId": "A",
+            "csvFileName": "order_timeline.csv",
+            "csvWave": []
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 4},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 85},
+                {"color": "green", "value": 95}
+              ]
+            },
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Order Timeline",
+        "type": "timeseries",
+        "targets": [
+          {
+            "datasource": {
+              "type": "marcusolsson-csv-datasource", 
+              "uid": "manufacturing-csv"
+            },
+            "refId": "A",
+            "csvFileName": "order_timeline.csv",
+            "csvWave": []
+          }
+        ],
+        "gridPos": {"h": 8, "w": 18, "x": 0, "y": 8},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "vis": false
+              },
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {"type": "linear"},
+              "showPoints": "never",
+              "spanNulls": false
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {"mode": "single"}
+        }
+      },
+      {
+        "id": 5,
+        "title": "Machine Performance",
+        "type": "table",
+        "targets": [
+          {
+            "datasource": {
+              "type": "marcusolsson-csv-datasource",
+              "uid": "manufacturing-csv"
+            },
+            "refId": "A",
+            "csvFileName": "machine_metrics.csv",
+            "csvWave": []
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null}
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "utilization_percentage"},
+              "properties": [
+                {"id": "unit", "value": "percent"},
+                {"id": "color", "value": {"mode": "continuous-GrYlRd"}}
+              ]
+            }
+          ]
+        },
+        "options": {
+          "showHeader": true
+        }
+      },
+      {
+        "id": 6,
+        "title": "Queue Analysis",
+        "type": "barchart",
+        "targets": [
+          {
+            "datasource": {
+              "type": "marcusolsson-csv-datasource",
+              "uid": "manufacturing-csv"
+            },
+            "refId": "A", 
+            "csvFileName": "queue_analysis.csv",
+            "csvWave": []
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "palette-classic"},
+            "custom": {
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "displayMode": "list",
+              "orientation": "horizontal"
+            }
+          }
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": "/avg_queue_delay/"
+          },
+          "displayMode": "list",
+          "orientation": "horizontal"
+        }
+      }
+    ],
+    "time": {"from": "now-7d", "to": "now"},
+    "timepicker": {},
+    "timezone": "",
+    "refresh": "5m",
+    "schemaVersion": 27,
+    "version": 1
+  }
+}
