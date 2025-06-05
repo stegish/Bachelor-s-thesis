@@ -53,10 +53,14 @@ def handle_errors(f):
     return decorated_function
 
 def initialize_analytics():
-    """Initialize analytics service with error handling"""
+    """Initialize analytics service with error handling.
+    If the ``USE_MOCK_MONGO`` environment variable is set to ``true`` the
+    service will use an in-memory MongoDB instance.
+    """
     global analytics
     try:
-        analytics = ManufacturingAnalytics(MONGO_URI, DATABASE_NAME)
+        use_mock = os.environ.get('USE_MOCK_MONGO', 'false').lower() == 'true'
+        analytics = ManufacturingAnalytics(MONGO_URI, DATABASE_NAME, use_mock)
         logger.info("Analytics service initialized successfully")
         return True
     except Exception as e:
