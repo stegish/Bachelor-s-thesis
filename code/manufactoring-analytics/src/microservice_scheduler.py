@@ -24,6 +24,7 @@ app = Flask(__name__)
 # Configuration
 MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
 DATABASE_NAME = os.environ.get('DATABASE_NAME', 'manufacturing_db')
+PROCESS_DATABASE_NAME = os.environ.get('PROCESS_DATABASE_NAME', DATABASE_NAME)
 OUTPUT_DIR = os.environ.get('OUTPUT_DIR', './analytics_output')
 GRAFANA_CSV_DIR = os.environ.get('GRAFANA_CSV_DIR', '/var/lib/grafana/csv')
 SCHEDULE_INTERVAL = int(os.environ.get('SCHEDULE_INTERVAL_MINUTES', 60))
@@ -56,7 +57,7 @@ def initialize_analytics():
     """Initialize analytics service with error handling"""
     global analytics
     try:
-        analytics = ManufacturingAnalytics(MONGO_URI, DATABASE_NAME)
+        analytics = ManufacturingAnalytics(MONGO_URI, DATABASE_NAME, PROCESS_DATABASE_NAME)
         logger.info("Analytics service initialized successfully")
         return True
     except Exception as e:
@@ -282,6 +283,7 @@ def get_config():
     return jsonify({
         'mongo_uri': MONGO_URI.replace(MONGO_URI.split('@')[0].split('//')[1], '***') if '@' in MONGO_URI else MONGO_URI,
         'database_name': DATABASE_NAME,
+        'process_database_name': PROCESS_DATABASE_NAME,
         'output_directory': OUTPUT_DIR,
         'grafana_csv_directory': GRAFANA_CSV_DIR,
         'schedule_interval_minutes': SCHEDULE_INTERVAL,

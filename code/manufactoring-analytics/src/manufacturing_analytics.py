@@ -9,13 +9,21 @@ import json
 from collections import defaultdict
 
 class ManufacturingAnalytics:
-    def __init__(self, mongo_uri: str, database_name: str):
-        """Initialize the analytics service with MongoDB connection"""
+    def __init__(self, mongo_uri: str, orders_db: str, process_db: str | None = None):
+        """Initialize the analytics service with MongoDB connection.
+
+        ``orders_db`` contains the production orders while ``process_db`` stores
+        the machine cluster information. If ``process_db`` is ``None`` the
+        ``orders_db`` will be used for both collections.
+        """
 
         self.client = MongoClient(mongo_uri)
-        self.db = self.client[database_name]
-        self.orders_collection = self.db['NewOrder']
-        self.machines_collection = self.db['macchinari']
+
+        self.orders_db = self.client[orders_db]
+        self.orders_collection = self.orders_db['NewOrder']
+
+        self.process_db = self.client[process_db] if process_db else self.orders_db
+        self.machines_collection = self.process_db['macchinari']
         
     def extract_phase_metrics(self, orders: List[Dict]) -> pd.DataFrame:
         """Extract detailed phase-level metrics from orders"""
@@ -309,10 +317,11 @@ class ManufacturingAnalytics:
 if __name__ == "__main__":
     # Configure your MongoDB connection
     MONGO_URI = "mongodb://localhost:27017/"  # Update with your MongoDB URI
-    DATABASE_NAME = "your_database_name"  # Update with your database name
-    
+    ORDERS_DB = "your_orders_db"  # Database containing production orders
+    PROCESS_DB = "process_db"  # Database containing machine information
+
     # Initialize the analytics service
-    analytics = ManufacturingAnalytics(MONGO_URI, DATABASE_NAME)
+    analytics = ManufacturingAnalytics(MONGO_URI, ORDERS_DB, PROCESS_DB)
     
     # Generate all analytics and export to CSV
     summary = analytics.export_to_csv()
