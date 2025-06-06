@@ -1,0 +1,10 @@
+phase_name,avg_queue_delay,queue_delay_std,max_queue_delay,total_jobs,total_quantity,is_bottleneck
+Assemblaggio,102.4,1520.94,980.51,26,12,False
+Filettatura,1087.93,47.4,1123.93,12,0,False
+Piega 1,507.21,1049.74,4681.55,43,222,False
+Saldatura,488.22,1028.69,4705.44,41,231,False
+Smerigliatura,1362.46,3420.79,5136.63,10,12,False
+Svasatura,980.51,,980.51,2,0,False
+Taglio,1860.24,1165.62,5469.77,45,325,True
+Verniciatura,345.47,13.86,353.47,22,5,False
+Zincatura,,,,6,0,False

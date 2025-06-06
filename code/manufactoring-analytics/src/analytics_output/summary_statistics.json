@@ -1,0 +1,14 @@
+{
+  "total_orders": 46,
+  "completed_orders": 14,
+  "active_machines": 12,
+  "total_machines": 12,
+  "avg_order_lead_time": 34.0,
+  "on_time_delivery_rate": 15.384615384615385,
+  "avg_machine_utilization": -433.66704832294295,
+  "avg_machine_efficiency": 8.040439995043549,
+  "total_operators": 2,
+  "bottleneck_machines": [
+    "Taglio"
+  ]
+}

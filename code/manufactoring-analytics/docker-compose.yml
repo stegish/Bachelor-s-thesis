@@ -26,6 +26,7 @@ services:
     environment:
       MONGO_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-password123}@mongodb:27017/${DATABASE_NAME:-manufacturing_db}?authSource=admin
       DATABASE_NAME: ${DATABASE_NAME:-manufacturing_db}
+      PROCESS_DATABASE_NAME: ${PROCESS_DATABASE_NAME:-process_db}
       OUTPUT_DIR: /app/analytics_output
       SCHEDULE_INTERVAL_MINUTES: ${SCHEDULE_INTERVAL_MINUTES:-60}
       FLASK_ENV: ${FLASK_ENV:-production}
