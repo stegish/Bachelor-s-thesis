@@ -1,2 +1,107 @@
-\chapter{Introduzione}
-\label{chap:introduzione-teorica}
+\chapter{Analisi delle Tecnologie e Strumenti}
+\label{ch:tecnologie}
+
+La realizzazione del prototipo descritto in questa tesi si fonda su un'architettura tecnologica moderna e stratificata, progettata per garantire flessibilità, performance e manutenibilità. La selezione di ogni componente dello \textit{stack}\textsubscript{G} tecnologico non è stata casuale, ma è il risultato di un'analisi mirata a soddisfare i requisiti funzionali e non funzionali del progetto. Questo capitolo analizza in profondità le principali tecnologie e i paradigmi architetturali adottati, motivando le scelte progettuali in relazione agli obiettivi prefissati.
+
+Si partirà dall'esame del \textbf{Model Context Protocol (MCP)}, il paradigma che abilita l'interazione avanzata tra il \textit{Large Language Model} (LLM)\textsubscript{G} e gli strumenti software del gestionale. Successivamente, si analizzerà il \textit{back-end}, illustrando perché Python, in combinazione con il \textit{framework} FastAPI\textsubscript{G}, rappresenta la scelta ottimale per creare un servizio API\textsubscript{G} performante e robusto. Si proseguirà con il \textit{front-end}, dove si argomenterà l'adozione di Flutter\textsubscript{G} per la sua capacità di offrire un'esperienza utente nativa e multi-piattaforma. Infine, si esaminerà il database NoSQL\textsubscript{G} MongoDB\textsubscript{G}, spiegando come il suo modello a documenti si adatti perfettamente alla natura eterogenea dei dati di produzione industriale.
+
+\section{Model Context Protocol (MCP) per l'Interazione con LLM}
+\label{sec:mcp}
+
+Uno degli obiettivi più ambiziosi della tesi è trasformare l'LLM da un semplice generatore di testo a un agente proattivo, capace di interagire con il sistema informativo aziendale per recuperare dati in tempo reale ed eseguire azioni. Questo richiede un meccanismo di comunicazione strutturato che va oltre il semplice \textit{prompt engineering}\textsubscript{G}. Per questo motivo, è stato implementato un \textbf{Model Context Protocol (MCP)}, un paradigma architetturale che abilita l'LLM a utilizzare "strumenti" (\textit{tools}) esterni. Tale approccio si ispira a pattern emergenti come ReAct (Reasoning and Acting), in cui il modello alterna fasi di ragionamento a fasi di azione per risolvere compiti complessi.
+
+\subsection{Architettura e Flusso Operativo}
+L'MCP definisce un contratto di comunicazione tra l'LLM e il \textit{back-end} (l'orchestratore). L'LLM viene istruito, tramite un \textit{system prompt} iniziale, sull'esistenza di un set di strumenti e sulla sintassi per invocarli. Ogni strumento è descritto da:
+\begin{itemize}
+    \item \textbf{Nome:} Un identificativo univoco (es. \verb|analizza_colli_bottiglia|).
+    \item \textbf{Descrizione:} Una spiegazione in linguaggio naturale di cosa fa lo strumento, fondamentale per permettere all'LLM di sceglierlo correttamente.
+    \item \textbf{Parametri:} Uno schema, tipicamente in formato JSON Schema, che definisce i parametri richiesti, il loro tipo e se sono obbligatori.
+\end{itemize}
+
+Il ciclo di interazione, che realizza i requisiti FD1, FD2 e FZ1, si svolge come segue:
+\begin{enumerate}
+    \item \textbf{Analisi dell'Intento:} L'LLM riceve la richiesta dell'utente. Invece di rispondere immediatamente, analizza la richiesta alla luce degli strumenti che conosce. Se determina che per rispondere necessita di informazioni esterne o di eseguire un'azione, decide di invocare uno strumento.
+    
+    \item \textbf{Generazione della Chiamata Strumento:} L'LLM non esegue direttamente l'azione, ma formatta la sua decisione in una struttura dati predefinita e la restituisce all'orchestratore. Ad esempio, per la richiesta "Mostrami i rallentamenti sulla linea 2 di ieri", potrebbe generare:
+    \begin{verbatim}
+[TOOL_CALL]
+{
+  "tool_name": "analizza_rallentamenti_linea",
+  "parameters": {
+    "id_linea": 2,
+    "data": "2024-10-25"
+  }
+}
+    \end{verbatim}
+    
+    \item \textbf{Orchestrazione e Invocazione:} Il \textit{back-end} FastAPI intercetta questa risposta. Riconosce il formato \verb|[TOOL_CALL]|, ne convalida la correttezza rispetto allo schema dello strumento e invoca la funzione Python corrispondente, passando i parametri estratti. Questa è una fase cruciale per la sicurezza: l'LLM non ha mai accesso diretto al codice o al database; agisce sempre attraverso un'interfaccia controllata e sicura.
+    
+    \item \textbf{Esecuzione e Raccolta Risultati:} La funzione Python esegue la logica necessaria (es. una query di aggregazione su MongoDB), raccoglie i risultati e li formatta in una stringa concisa (es. un riassunto in JSON\textsubscript{G}).
+    
+    \item \textbf{Augmentation del Contesto e Sintesi Finale:} Il \textit{back-end} invia una seconda richiesta all'LLM, questa volta "aumentando" il contesto. Il nuovo \textit{prompt} include la conversazione precedente, la chiamata allo strumento effettuata e il risultato ottenuto. L'istruzione finale è di formulare una risposta per l'utente basata su queste nuove informazioni. L'LLM, ora in possesso dei dati fattuali, genera la risposta finale in linguaggio naturale.
+\end{enumerate}
+
+Questo ciclo può essere iterativo. Per domande complesse, l'LLM potrebbe eseguire più chiamate a strumenti diversi prima di giungere a una conclusione. L'adozione di questo protocollo, sebbene introduca una latenza aggiuntiva dovuta ai molteplici round-trip con l'API dell'LLM, garantisce modularità, sicurezza e una separazione netta tra l'intelligenza linguistica del modello e la logica applicativa del gestionale.
+
+\section{Back-end: Python e FastAPI}
+\label{sec:backend}
+Il \textit{back-end} è il cuore logico dell'applicazione: espone le API per il \textit{front-end}, implementa gli algoritmi di analisi dei dati (requisito O03) e orchestra l'interazione con l'LLM. La scelta è ricaduta su Python con il \textit{framework} FastAPI per una combinazione di fattori legati a performance, ecosistema e modernità architetturale.
+
+\subsection{Python: L'Ecosistema per Dati e AI}
+Python è la lingua franca della \textit{data science} e dell'intelligenza artificiale. La sua adozione ha permesso di integrare nativamente librerie fondamentali per il progetto, come \textbf{Pandas} per la manipolazione di dati tabellari, \textbf{NumPy} per calcoli numerici e la libreria \textbf{OpenAI} per l'interazione con l'API di GPT. Questa sinergia ha ridotto drasticamente i tempi di sviluppo della logica di analisi delle anomalie.
+
+\subsection{FastAPI: Performance e Sviluppo Moderno}
+FastAPI non è un semplice \textit{framework web}, ma un ecosistema basato su standard moderni.
+\begin{itemize}
+    \item \textbf{Architettura ASGI:} A differenza di \textit{framework} tradizionali basati su WSGI (Web Server Gateway Interface), che opera in modo sincrono, FastAPI si fonda su \textbf{ASGI (Asynchronous Server Gateway Interface)}. Questo permette di definire \textit{endpoint}\textsubscript{G} asincroni usando la sintassi \verb|async def|. In un'applicazione come la nostra, dove le chiamate all'API dell'LLM possono richiedere diversi secondi, l'approccio asincrono è fondamentale. Una richiesta lunga non blocca l'intero processo del server, che può continuare a servire altre richieste concorrenti, garantendo scalabilità e reattività.
+
+    \item \textbf{Validazione dei Dati con Pydantic:} FastAPI utilizza la libreria \textbf{Pydantic} per la definizione e validazione dei modelli di dati. Definendo una semplice classe Python con \textit{type hints}, Pydantic si occupa di:
+    \begin{itemize}
+        \item \textbf{Validazione in Ingresso:} Controlla che i dati inviati dal client (es. il \textit{front-end} Flutter) rispettino il formato atteso, restituendo errori chiari e dettagliati in caso contrario.
+        \item \textbf{Serializzazione in Uscita:} Converte gli oggetti Python in formato JSON per le risposte API.
+        \item \textbf{Documentazione:} Utilizza questi modelli per generare schemi OpenAPI precisi.
+    \end{itemize}
+    Questo approccio \textit{schema-first} riduce drasticamente gli errori di runtime legati a dati malformati e migliora la robustezza generale del sistema.
+
+    \item \textbf{Dependency Injection System:} FastAPI include un potente sistema di \textit{Dependency Injection} (DI). Questo pattern di progettazione consente di disaccoppiare i componenti del codice. Ad esempio, la connessione al database o l'autenticazione dell'utente (requisito O04) possono essere gestite come "dipendenze" che vengono "iniettate" negli \textit{endpoint} che ne hanno bisogno. Ciò rende il codice più modulare, più facile da testare (è possibile "mockare" le dipendenze nei test) e più semplice da mantenere.
+\end{itemize}
+
+\section{Front-end: Flutter}
+\label{sec:frontend}
+Il \textit{front-end} è il punto di contatto diretto con l'utente e deve soddisfare requisiti stringenti di usabilità (O05), reattività e disponibilità su più piattaforme (O01, D01). La scelta di \textbf{Flutter}, il \textit{UI toolkit}\textsubscript{G} di Google, è motivata dalla sua architettura unica e dalle garanzie che offre in termini di performance e coerenza visiva.
+
+\subsection{Architettura di Rendering e Performance Native}
+A differenza di altri \textit{framework cross-platform} che agiscono come un ponte verso i componenti UI nativi del sistema operativo (OEM widgets), Flutter adotta un approccio differente. Porta con sé il proprio motore di rendering ad alte prestazioni, \textbf{Skia}, una libreria grafica 2D open-source. Flutter controlla ogni pixel disegnato sullo schermo. Questo comporta due vantaggi cruciali:
+\begin{enumerate}
+    \item \textbf{Coerenza Totale:} L'interfaccia utente appare e si comporta in modo identico su Android, iOS, web e desktop, eliminando le inconsistenze tipiche di altri approcci.
+    \item \textbf{Performance Elevate:} Compilando il codice Dart in codice macchina nativo (ARM per mobile, JavaScript per web), Flutter raggiunge performance grafiche vicine a quelle delle applicazioni native, garantendo animazioni fluide a 60 o 120 FPS e soddisfacendo il requisito F02.
+\end{enumerate}
+
+\subsection{Paradigma Dichiarativo e State Management}
+Flutter adotta un paradigma di UI dichiarativo. Lo sviluppatore descrive come dovrebbe apparire l'interfaccia utente per un dato stato dell'applicazione. Quando lo stato cambia (es. arrivano nuovi dati dal \textit{back-end}), Flutter ricostruisce in modo efficiente solo le parti dell'albero dei \textit{widget}\textsubscript{G} che sono cambiate.
+\begin{itemize}
+    \item \textbf{Widget come Elementi Costruttivi:} Tutto in Flutter è un \textit{widget}, da un semplice testo a un layout complesso. La distinzione fondamentale è tra \texttt{StatelessWidget} (immutabile, la cui vista dipende solo dalla configurazione iniziale) e \texttt{StatefulWidget} (che può mantenere uno stato interno che cambia nel tempo).
+    \item \textbf{State Management:} Per applicazioni complesse, la gestione dello stato applicativo è critica. Sono state valutate diverse soluzioni architetturali (es. Provider, BLoC, Riverpod). Per questo progetto è stato adottato un approccio basato su [*Nota per te: Inserisci qui il pattern che hai usato, es. "Provider" per la sua semplicità e integrazione con il framework, o "BLoC" per una separazione più rigorosa della logica di business*], che consente di separare la UI dalla logica di business, rendendo il codice più testabile e scalabile.
+\end{itemize}
+Infine, il linguaggio \textbf{Dart}, con il suo forte sistema di tipizzazione, la gestione della nullabilità (\textit{sound null safety}) e il supporto integrato per la programmazione asincrona (\texttt{Future} e \texttt{Stream}), si è rivelato uno strumento robusto e produttivo per costruire un'applicazione client-server affidabile.
+
+\section{Database: MongoDB}
+\label{sec:database}
+Il sistema di persistenza dei dati per questo progetto si interfaccia con MongoDB\textsubscript{G}, il database NoSQL\textsubscript{G} già in uso come soluzione di archiviazione primaria presso l'azienda Devess. La presenza di questa tecnologia ha costituito un punto fermo dell'architettura esistente, pertanto il lavoro di tesi si è concentrato sull'integrazione con tale sistema piuttosto che sulla selezione di una nuova base dati. L'approccio adottato è stato quello di analizzare la struttura dati preesistente e sfruttare le funzionalità offerte da MongoDB per realizzare gli obiettivi del progetto.
+
+\subsection{Integrazione con il Modello a Documenti Esistente}
+Il database aziendale è strutturato secondo il modello a documenti di MongoDB, in cui i dati sono memorizzati in collezioni di documenti BSON\textsubscript{G} (Binary JSON). Questo modello, caratterizzato da una notevole flessibilità di schema (\textit{schema-less}), è utilizzato in azienda per accomodare la natura eterogenea dei dati provenienti dalle linee di produzione, che possono includere log\textsubscript{G} di macchinari, misurazioni di sensori e input manuali con formati variabili.
+
+Il lavoro svolto ha richiesto un'analisi delle collezioni esistenti per comprendere come interrogare e manipolare i dati di produzione per gli scopi del progetto. L'interazione con il database è avvenuta rispettando le convenzioni e le strutture dati già in uso, assicurando che il nuovo modulo si integrasse in modo non invasivo nell'ecosistema software preesistente.
+
+\subsection{Utilizzo dell'Aggregation Framework per l'Analisi Dati}
+Per soddisfare il requisito O03, ovvero l'identificazione di anomalie, colli di bottiglia e il calcolo di metriche come il \textit{lead time}\textsubscript{G}, è stato impiegato l'\textbf{Aggregation Framework} di MongoDB. Questa funzionalità permette di eseguire pipeline di elaborazione dati complesse direttamente sul server del database.
+
+Le query di analisi sono state costruite come una sequenza di stadi di aggregazione per trasformare i dati grezzi in informazioni significative. Tipicamente, una pipeline implementata nel progetto includeva stadi come:
+\begin{itemize}
+    \item \texttt{\$match}: Per filtrare i documenti relativi a un determinato intervallo temporale o a una specifica linea di produzione.
+    \item \texttt{\$group}: Per raggruppare i dati e calcolare valori aggregati, come medie e somme, necessari per le metriche di performance.
+    \item \texttt{\$sort}: Per ordinare i risultati e mettere in evidenza le criticità maggiori.
+    \item \texttt{\$project}: Per rimodellare il documento di output, selezionando solo i campi di interesse per il \textit{back-end}.
+\end{itemize}
+Questo approccio ha permesso di implementare la logica di analisi richiesta sfruttando uno strumento nativo del database in uso, delegando ad esso parte del carico computazionale. L'output di queste aggregazioni ha costituito la base dati su cui il \textit{back-end} ha poi costruito le risposte per il \textit{front-end} e i suggerimenti per l'LLM.
