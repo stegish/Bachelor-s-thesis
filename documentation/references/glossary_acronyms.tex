@@ -1,50 +1,58 @@
-% Acronyms
+
+% -------------------- Acronimi --------------------
 \newacronym{api}{API}{Application Programming Interface}
 \newacronym{sdk}{SDK}{Software Development Kit}
 \newacronym{uml}{UML}{Unified Modeling Language}
-\newacronym{tsa}{TSA}{Termine solo acronimo}
-\newacronym{pmi}{PMI}{Piccole e Medie Imprese}
+\newacronym{pmi}{PMI}{Piccola e Media Impresa}
+\newacronym{poc}{PoC}{Proof of Concept}
+\newacronym{kpi}{KPI}{Key Performance Indicator}
+\newacronym{llm}{LLM}{Large Language Model}
 
-% Glossary
-\newglossaryentry{apig}{
-    name={API},
-    text={Application Program Interface},
+% --- NUOVI ACRONIMI AGGIUNTI ---
+\newacronym{mcp}{MCP}{Model Context Protocol}
+\newacronym{csv}{CSV}{Comma-Separated Values}
+
+
+\newglossaryentry{api_entry}{
+    name={API (Application Programming Interface)},
     sort=api,
-    description={In informatics, an API is a set of procedures available to programmers, typically grouped to form a toolkit for a specific task within a program. Its purpose is to provide an abstraction, usually between hardware and the programmer or between low-level and high-level software, simplifying the programming process}
+    description={Insieme di regole, specifiche e strumenti che definiscono come i componenti software debbano interagire tra loro. Un’API espone un’interfaccia attraverso la quale un’applicazione può richiedere servizi, dati o funzionalità a un’altra, nascondendo i dettagli di implementazione interni.}
 }
 
-\newglossaryentry{sdkg}{
-    name={SDK},
-    text={Software Development Kit},
+\newglossaryentry{sdk_entry}{
+    name={SDK (Software Development Kit)},
     sort=sdk,
-    description={A Software Development Kit (SDK) is a collection of development tools in one installable package, facilitating application creation by providing a compiler, debugger, and sometimes a software framework. SDKs are typically specific to a hardware platform and operating system combination. Many application developers use specific SDKs to enable advanced functionalities such as advertisements, push notifications, etc}
+    description={Insieme di strumenti di sviluppo software che semplifica la creazione di applicazioni per una specifica piattaforma o linguaggio di programmazione, fornendo librerie, documentazione, esempi di codice e altri tool.}
 }
 
-\newglossaryentry{umlg}{
-    name={UML},
-    text={Unified Modeling Language},
+\newglossaryentry{uml_entry}{
+    name={UML (Unified Modeling Language)},
     sort=uml,
-    description={In software engineering, Unified Modeling Language (UML) is a modeling and specification language based on the object-oriented paradigm. UML serves as a "lingua franca" in the object-oriented design and programming community. Much of the industry literature uses UML to describe analytical and design solutions in a concise and understandable way for a broad audience}
+    description={Linguaggio di modellazione standardizzato utilizzato nell'ingegneria del software per visualizzare, specificare, costruire e documentare gli artefatti di un sistema software.}
 }
 
-\newglossaryentry{TermineSenzaAcronimo}{
-    name={Nome del termine},
-    sort=termine senza acronimo,
-    description={Descrizione}
+\newglossaryentry{pmi_entry}{
+    name={PMI (Piccola e Media Impresa)},
+    sort=pmi,
+    description={Impresa che, ai sensi della Raccomandazione 2003/361/CE della Commissione europea, impiega meno di 250 addetti e realizza un fatturato annuo non superiore a 50\,milioni di euro oppure un totale di bilancio annuo non superiore a 43\,milioni di euro.}
 }
 
-\newglossaryentry{LLM}{
-    name={LLM},
-    text={Large Language Model},
+\newglossaryentry{poc_entry}{
+    name={PoC (Proof of Concept)},
+    sort=poc,
+    description={Realizzazione pratica e preliminare di un'idea o di un metodo per dimostrarne la fattibilità e verificarne il potenziale. Un PoC non è un prototipo, ma una prova che il concetto fondamentale funziona.}
+}
+
+\newglossaryentry{kpi_entry}{
+    name={KPI (Key Performance Indicator)},
+    sort=kpi,
+    description={Metrica quantitativa utilizzata per valutare l’efficacia di un processo o di un’attività aziendale in rapporto agli obiettivi prefissati, supportando decisioni basate su dati.}
+}
+
+\newglossaryentry{llm_entry}{
+    name={LLM (Large Language Model)},
     sort=llm,
-    description={Modello di intelligenza artificiale basato su architetture di reti neurali profonde, progettato per elaborare, comprendere e generare testo in linguaggio naturale. La loro capacità predittiva e generativa si migliora proporzionalmente alle dimensioni del modello e alla quantità di dati utilizzati durante la fase di training}
-}
-
-\newglossaryentry{API}{
-    name={API},
-    text={Application Programming Interface},
-    sort=api,
-    description={Insieme di regole, specifiche e strumenti che definiscono come i componenti software debbano interagire tra loro. Un’API espone un’interfaccia attraverso la quale un’applicazione può richiedere servizi, dati o funzionalità a un’altra, nascondendo i dettagli di implementazione interni}
+    description={Modello di intelligenza artificiale basato su architetture di reti neurali profonde, addestrato su vasti corpora di testo per comprendere, generare e manipolare il linguaggio umano in modo coerente e contestualmente appropriato.}
 }
 
 \newglossaryentry{leadtime}{
@@ -53,30 +61,40 @@
     description={Il termine \textit{lead time} indica l'intervallo di tempo che intercorre tra l'avvio e il completamento di un processo produttivo o logistico, utilizzato per misurare l'efficienza operativa e i tempi di risposta del sistema.}
 }
 
-\newglossaryentry{PoC}{
-    name={PoC},
-    text={Proof of Concept},
-    sort=poc,
-    description={Versione preliminare di un progetto o prototipo realizzato al fine di dimostrare la fattibilità di un’idea o di una tecnologia prima dello sviluppo completo.}
-}
-
-\newglossaryentry{KPI}{
-    name={KPI},
-    text={Key Performance Indicator},
-    sort=kpi,
-    description={Metrica quantitativa utilizzata per valutare l’efficacia di un processo o di un’attività aziendale in rapporto agli obiettivi prefissati, supportando decisioni basate su dati.}
-}
-
-\newglossaryentry{pmig}{
-    name={PMI},
-    text={Piccola e Media Impresa},
-    sort=pmi,
-    description={Impresa che, ai sensi della Raccomandazione 2003/361/CE della Commissione europea, impiega meno di 250 addetti e realizza un fatturato annuo non superiore a 50\,milioni di euro oppure un totale di bilancio annuo non superiore a 43\,milioni di euro.}
-}
-
 \newglossaryentry{log}{
     name={log},
-    text={log},
     sort=log,
     description={In ambito informatico, il termine \textit{log} indica un registro cronologico di eventi, messaggi o transazioni generati da un sistema, applicazione o dispositivo, utilizzato per il monitoraggio, la diagnostica e l’audit.}
+}
+
+% --- NUOVE VOCI DEL GLOSSARIO AGGIUNTE ---
+
+\newglossaryentry{nosql}{
+    name={NoSQL},
+    sort=nosql,
+    description={Famiglia di sistemi di gestione di basi di dati non relazionali, progettati per offrire elevata scalabilità e flessibilità. I modelli più comuni includono database a documenti (come MongoDB), a colonne, chiave-valore e a grafo.}
+}
+
+\newglossaryentry{langchain}{
+    name={LangChain},
+    sort=langchain,
+    description={Framework open-source per lo sviluppo di applicazioni basate su modelli linguistici (LLM). Semplifica l'orchestrazione di catene complesse (\textit{chains}), la gestione della memoria conversazionale e l'integrazione con fonti dati e strumenti esterni.}
+}
+
+\newglossaryentry{flutter}{
+    name={Flutter},
+    sort=flutter,
+    description={Toolkit UI open-source sviluppato da Google per la creazione di interfacce utente performanti e visivamente coerenti per applicazioni mobile, web e desktop, partendo da un'unica base di codice in linguaggio Dart.}
+}
+
+\newglossaryentry{mcp_entry}{
+    name={MCP (Model Context Protocol)},
+    sort=mcp,
+    description={Protocollo custom che definisce le regole di interazione tra un Large Language Model (LLM) e strumenti esterni (\textit{tools}). Specifica il vocabolario degli strumenti disponibili, la sintassi per la loro invocazione e gli schemi per la validazione dei dati.}
+}
+
+\newglossaryentry{csv_entry}{
+    name={CSV (Comma-Separated Values)},
+    sort=csv,
+    description={Formato di file testuale utilizzato per l'archiviazione di dati in forma tabellare. Ogni riga del file rappresenta una riga della tabella e i campi al suo interno sono separati da un carattere delimitatore, tipicamente una virgola.}
 }

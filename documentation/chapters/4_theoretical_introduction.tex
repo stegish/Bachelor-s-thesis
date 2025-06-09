@@ -1,107 +1,162 @@
-\chapter{Analisi delle Tecnologie e Strumenti}
-\label{ch:tecnologie}
+\chapter{Analisi Comparativa delle Tecnologie e degli Strumenti}
+\label{ch:tecnologie_strumenti}
 
-La realizzazione del prototipo descritto in questa tesi si fonda su un'architettura tecnologica moderna e stratificata, progettata per garantire flessibilità, performance e manutenibilità. La selezione di ogni componente dello \textit{stack}\textsubscript{G} tecnologico non è stata casuale, ma è il risultato di un'analisi mirata a soddisfare i requisiti funzionali e non funzionali del progetto. Questo capitolo analizza in profondità le principali tecnologie e i paradigmi architetturali adottati, motivando le scelte progettuali in relazione agli obiettivi prefissati.
+Lo sviluppo di un sistema software innovativo, specialmente in un contesto agile come quello di una startup, richiede un'attenta valutazione delle tecnologie disponibili. Ogni scelta architetturale implica un compromesso tra performance, costi, tempi di sviluppo e manutenibilità futura. Questo capitolo non si limita a elencare gli strumenti adottati per la realizzazione del prototipo, ma si propone di analizzare criticamente il panorama tecnologico per ciascun dominio problematico affrontato.
 
-Si partirà dall'esame del \textbf{Model Context Protocol (MCP)}, il paradigma che abilita l'interazione avanzata tra il \textit{Large Language Model} (LLM)\textsubscript{G} e gli strumenti software del gestionale. Successivamente, si analizzerà il \textit{back-end}, illustrando perché Python, in combinazione con il \textit{framework} FastAPI\textsubscript{G}, rappresenta la scelta ottimale per creare un servizio API\textsubscript{G} performante e robusto. Si proseguirà con il \textit{front-end}, dove si argomenterà l'adozione di Flutter\textsubscript{G} per la sua capacità di offrire un'esperienza utente nativa e multi-piattaforma. Infine, si esaminerà il database NoSQL\textsubscript{G} MongoDB\textsubscript{G}, spiegando come il suo modello a documenti si adatti perfettamente alla natura eterogenea dei dati di produzione industriale.
-
-\section{Model Context Protocol (MCP) per l'Interazione con LLM}
-\label{sec:mcp}
-
-Uno degli obiettivi più ambiziosi della tesi è trasformare l'LLM da un semplice generatore di testo a un agente proattivo, capace di interagire con il sistema informativo aziendale per recuperare dati in tempo reale ed eseguire azioni. Questo richiede un meccanismo di comunicazione strutturato che va oltre il semplice \textit{prompt engineering}\textsubscript{G}. Per questo motivo, è stato implementato un \textbf{Model Context Protocol (MCP)}, un paradigma architetturale che abilita l'LLM a utilizzare "strumenti" (\textit{tools}) esterni. Tale approccio si ispira a pattern emergenti come ReAct (Reasoning and Acting), in cui il modello alterna fasi di ragionamento a fasi di azione per risolvere compiti complessi.
-
-\subsection{Architettura e Flusso Operativo}
-L'MCP definisce un contratto di comunicazione tra l'LLM e il \textit{back-end} (l'orchestratore). L'LLM viene istruito, tramite un \textit{system prompt} iniziale, sull'esistenza di un set di strumenti e sulla sintassi per invocarli. Ogni strumento è descritto da:
-\begin{itemize}
-    \item \textbf{Nome:} Un identificativo univoco (es. \verb|analizza_colli_bottiglia|).
-    \item \textbf{Descrizione:} Una spiegazione in linguaggio naturale di cosa fa lo strumento, fondamentale per permettere all'LLM di sceglierlo correttamente.
-    \item \textbf{Parametri:} Uno schema, tipicamente in formato JSON Schema, che definisce i parametri richiesti, il loro tipo e se sono obbligatori.
-\end{itemize}
-
-Il ciclo di interazione, che realizza i requisiti FD1, FD2 e FZ1, si svolge come segue:
+L'analisi seguirà una struttura sistematica per ogni componente dell'architettura:
 \begin{enumerate}
-    \item \textbf{Analisi dell'Intento:} L'LLM riceve la richiesta dell'utente. Invece di rispondere immediatamente, analizza la richiesta alla luce degli strumenti che conosce. Se determina che per rispondere necessita di informazioni esterne o di eseguire un'azione, decide di invocare uno strumento.
-    
-    \item \textbf{Generazione della Chiamata Strumento:} L'LLM non esegue direttamente l'azione, ma formatta la sua decisione in una struttura dati predefinita e la restituisce all'orchestratore. Ad esempio, per la richiesta "Mostrami i rallentamenti sulla linea 2 di ieri", potrebbe generare:
-    \begin{verbatim}
-[TOOL_CALL]
-{
-  "tool_name": "analizza_rallentamenti_linea",
-  "parameters": {
-    "id_linea": 2,
-    "data": "2024-10-25"
-  }
-}
-    \end{verbatim}
-    
-    \item \textbf{Orchestrazione e Invocazione:} Il \textit{back-end} FastAPI intercetta questa risposta. Riconosce il formato \verb|[TOOL_CALL]|, ne convalida la correttezza rispetto allo schema dello strumento e invoca la funzione Python corrispondente, passando i parametri estratti. Questa è una fase cruciale per la sicurezza: l'LLM non ha mai accesso diretto al codice o al database; agisce sempre attraverso un'interfaccia controllata e sicura.
-    
-    \item \textbf{Esecuzione e Raccolta Risultati:} La funzione Python esegue la logica necessaria (es. una query di aggregazione su MongoDB), raccoglie i risultati e li formatta in una stringa concisa (es. un riassunto in JSON\textsubscript{G}).
-    
-    \item \textbf{Augmentation del Contesto e Sintesi Finale:} Il \textit{back-end} invia una seconda richiesta all'LLM, questa volta "aumentando" il contesto. Il nuovo \textit{prompt} include la conversazione precedente, la chiamata allo strumento effettuata e il risultato ottenuto. L'istruzione finale è di formulare una risposta per l'utente basata su queste nuove informazioni. L'LLM, ora in possesso dei dati fattuali, genera la risposta finale in linguaggio naturale.
+    \item \textbf{Definizione del problema}: si delineerà la sfida tecnica o funzionale da risolvere.
+    \item \textbf{Analisi delle alternative}: si esamineranno le principali tecnologie e approcci disponibili sul mercato per affrontare tale sfida, valutandone pro e contro.
+    \item \textbf{Soluzione adottata e motivazioni}: si presenterà la scelta effettuata, giustificandola non solo in base a meriti tecnici intrinseci, ma anche in relazione al contesto specifico del progetto, ovvero l'ecosistema di Devess, gli obiettivi della tesi e i vincoli operativi.
 \end{enumerate}
 
-Questo ciclo può essere iterativo. Per domande complesse, l'LLM potrebbe eseguire più chiamate a strumenti diversi prima di giungere a una conclusione. L'adozione di questo protocollo, sebbene introduca una latenza aggiuntiva dovuta ai molteplici round-trip con l'API dell'LLM, garantisce modularità, sicurezza e una separazione netta tra l'intelligenza linguistica del modello e la logica applicativa del gestionale.
+Questa disamina mira a fornire una visione completa del processo decisionale che ha plasmato l'architettura del sistema, evidenziando come ogni componente sia stato selezionato per contribuire a un sistema coeso, scalabile e allineato agli obiettivi strategici.
 
-\section{Back-end: Python e FastAPI}
-\label{sec:backend}
-Il \textit{back-end} è il cuore logico dell'applicazione: espone le API per il \textit{front-end}, implementa gli algoritmi di analisi dei dati (requisito O03) e orchestra l'interazione con l'LLM. La scelta è ricaduta su Python con il \textit{framework} FastAPI per una combinazione di fattori legati a performance, ecosistema e modernità architetturale.
+% --------------------------------------------------------------------
+\section{Architettura del Back-end e Comunicazione API}
+\label{sec:backend_analysis}
 
-\subsection{Python: L'Ecosistema per Dati e AI}
-Python è la lingua franca della \textit{data science} e dell'intelligenza artificiale. La sua adozione ha permesso di integrare nativamente librerie fondamentali per il progetto, come \textbf{Pandas} per la manipolazione di dati tabellari, \textbf{NumPy} per calcoli numerici e la libreria \textbf{OpenAI} per l'interazione con l'API di GPT. Questa sinergia ha ridotto drasticamente i tempi di sviluppo della logica di analisi delle anomalie.
+Il back-end rappresenta il nucleo logico dell'applicazione. Ha la duplice responsabilità di esporre un'interfaccia API sicura e performante per il front-end e di orchestrare le complesse interazioni con i modelli linguistici e le fonti dati esterne. La sua progettazione è cruciale per la reattività e la scalabilità dell'intero sistema.
 
-\subsection{FastAPI: Performance e Sviluppo Moderno}
-FastAPI non è un semplice \textit{framework web}, ma un ecosistema basato su standard moderni.
+\subsection{Analisi delle Alternative}
+
+La scelta del framework e del linguaggio di programmazione per il back-end ha considerato tre principali candidati:
+
 \begin{itemize}
-    \item \textbf{Architettura ASGI:} A differenza di \textit{framework} tradizionali basati su WSGI (Web Server Gateway Interface), che opera in modo sincrono, FastAPI si fonda su \textbf{ASGI (Asynchronous Server Gateway Interface)}. Questo permette di definire \textit{endpoint}\textsubscript{G} asincroni usando la sintassi \verb|async def|. In un'applicazione come la nostra, dove le chiamate all'API dell'LLM possono richiedere diversi secondi, l'approccio asincrono è fondamentale. Una richiesta lunga non blocca l'intero processo del server, che può continuare a servire altre richieste concorrenti, garantendo scalabilità e reattività.
-
-    \item \textbf{Validazione dei Dati con Pydantic:} FastAPI utilizza la libreria \textbf{Pydantic} per la definizione e validazione dei modelli di dati. Definendo una semplice classe Python con \textit{type hints}, Pydantic si occupa di:
-    \begin{itemize}
-        \item \textbf{Validazione in Ingresso:} Controlla che i dati inviati dal client (es. il \textit{front-end} Flutter) rispettino il formato atteso, restituendo errori chiari e dettagliati in caso contrario.
-        \item \textbf{Serializzazione in Uscita:} Converte gli oggetti Python in formato JSON per le risposte API.
-        \item \textbf{Documentazione:} Utilizza questi modelli per generare schemi OpenAPI precisi.
-    \end{itemize}
-    Questo approccio \textit{schema-first} riduce drasticamente gli errori di runtime legati a dati malformati e migliora la robustezza generale del sistema.
-
-    \item \textbf{Dependency Injection System:} FastAPI include un potente sistema di \textit{Dependency Injection} (DI). Questo pattern di progettazione consente di disaccoppiare i componenti del codice. Ad esempio, la connessione al database o l'autenticazione dell'utente (requisito O04) possono essere gestite come "dipendenze" che vengono "iniettate" negli \textit{endpoint} che ne hanno bisogno. Ciò rende il codice più modulare, più facile da testare (è possibile "mockare" le dipendenze nei test) e più semplice da mantenere.
+    \item \textbf{Python con Django/Flask}: Python è il linguaggio d'elezione per il machine learning e l'analisi dati. \textbf{Django} è un framework "batteries-included", robusto e maturo, ideale per progetti complessi con requisiti ben definiti. \textbf{Flask} è un micro-framework minimale e flessibile, che lascia massima libertà allo sviluppatore. Tuttavia, entrambi richiedono configurazioni aggiuntive per una gestione efficiente della concorrenza asincrona, fondamentale quando si interagisce con API esterne a latenza variabile come quelle degli \gls{llm}.
+    
+    \item \textbf{Node.js con Express.js/NestJS}: L'ecosistema JavaScript/TypeScript con Node.js è rinomato per il suo modello di I/O non bloccante, che lo rende eccezionalmente performante per applicazioni real-time e API-intensive. \textbf{Express.js} è il framework minimale di riferimento, mentre \textbf{NestJS} offre una struttura più opinionata e scalabile, ispirata ad Angular. Sebbene performante, l'ecosistema di Node.js per l'analisi dati e l'interazione scientifica, pur essendo in crescita, non eguaglia ancora la maturità e la ricchezza di quello Python.
+    
+    \item \textbf{Python con FastAPI}: \textbf{FastAPI} è un framework moderno che unisce la semplicità di Flask con performance paragonabili a quelle di Node.js, grazie al supporto nativo per la programmazione asincrona (tramite ASGI). Offre inoltre vantaggi unici come la validazione dei dati basata sui type hint di Python tramite Pydantic e la generazione automatica di documentazione interattiva (Swagger UI), accelerando drasticamente il ciclo di sviluppo e test delle API.
 \end{itemize}
 
-\section{Front-end: Flutter}
-\label{sec:frontend}
-Il \textit{front-end} è il punto di contatto diretto con l'utente e deve soddisfare requisiti stringenti di usabilità (O05), reattività e disponibilità su più piattaforme (O01, D01). La scelta di \textbf{Flutter}, il \textit{UI toolkit}\textsubscript{G} di Google, è motivata dalla sua architettura unica e dalle garanzie che offre in termini di performance e coerenza visiva.
+\subsection{Soluzione Adottata: Python e FastAPI}
 
-\subsection{Architettura di Rendering e Performance Native}
-A differenza di altri \textit{framework cross-platform} che agiscono come un ponte verso i componenti UI nativi del sistema operativo (OEM widgets), Flutter adotta un approccio differente. Porta con sé il proprio motore di rendering ad alte prestazioni, \textbf{Skia}, una libreria grafica 2D open-source. Flutter controlla ogni pixel disegnato sullo schermo. Questo comporta due vantaggi cruciali:
+La scelta è ricaduta su \textbf{Python} e \textbf{FastAPI}. Le motivazioni sono strategiche e tecniche:
 \begin{enumerate}
-    \item \textbf{Coerenza Totale:} L'interfaccia utente appare e si comporta in modo identico su Android, iOS, web e desktop, eliminando le inconsistenze tipiche di altri approcci.
-    \item \textbf{Performance Elevate:} Compilando il codice Dart in codice macchina nativo (ARM per mobile, JavaScript per web), Flutter raggiunge performance grafiche vicine a quelle delle applicazioni native, garantendo animazioni fluide a 60 o 120 FPS e soddisfacendo il requisito F02.
+    \item \textbf{Ecosistema Python}: La necessità di integrare librerie di analisi dati come Pandas e di interagire fluidamente con framework di orchestrazione LLM (come LangChain) ha reso Python la scelta più naturale e produttiva.
+    \item \textbf{Performance Asincrone}: FastAPI gestisce nativamente le operazioni asincrone. Questo è un requisito non negoziabile per il nostro caso d'uso, dove il back-end deve attendere le risposte dall'\gls{llm} senza bloccare altre richieste concorrenti, garantendo un'esperienza utente fluida.
+    \item \textbf{Produttività dello Sviluppatore}: La validazione automatica di Pydantic e la documentazione OpenAPI generata al volo riducono il codice ripetitivo e il rischio di errori, permettendo di concentrarsi sulla logica di dominio. Questo è un vantaggio decisivo in un contesto startup come Devess.
 \end{enumerate}
 
-\subsection{Paradigma Dichiarativo e State Management}
-Flutter adotta un paradigma di UI dichiarativo. Lo sviluppatore descrive come dovrebbe apparire l'interfaccia utente per un dato stato dell'applicazione. Quando lo stato cambia (es. arrivano nuovi dati dal \textit{back-end}), Flutter ricostruisce in modo efficiente solo le parti dell'albero dei \textit{widget}\textsubscript{G} che sono cambiate.
+---
+
+\section{Orchestrazione dell'Agente Intelligente}
+\label{sec:agent_orchestration}
+
+Il cuore innovativo della tesi risiede nella trasformazione dell'\gls{llm} in un agente autonomo. Questo richiede un "middleware" capace di orchestrare il dialogo, gestire la memoria conversazionale e permettere al modello di invocare strumenti esterni in modo sicuro e affidabile.
+
+\subsection{Analisi delle Alternative}
+
+Per l'orchestrazione dell'agente sono stati valutati tre approcci:
+
 \begin{itemize}
-    \item \textbf{Widget come Elementi Costruttivi:} Tutto in Flutter è un \textit{widget}, da un semplice testo a un layout complesso. La distinzione fondamentale è tra \texttt{StatelessWidget} (immutabile, la cui vista dipende solo dalla configurazione iniziale) e \texttt{StatefulWidget} (che può mantenere uno stato interno che cambia nel tempo).
-    \item \textbf{State Management:} Per applicazioni complesse, la gestione dello stato applicativo è critica. Sono state valutate diverse soluzioni architetturali (es. Provider, BLoC, Riverpod). Per questo progetto è stato adottato un approccio basato su [*Nota per te: Inserisci qui il pattern che hai usato, es. "Provider" per la sua semplicità e integrazione con il framework, o "BLoC" per una separazione più rigorosa della logica di business*], che consente di separare la UI dalla logica di business, rendendo il codice più testabile e scalabile.
+    \item \textbf{Sviluppo Custom senza Framework}: L'approccio più basilare consiste nell'interagire direttamente con le API del provider \gls{llm} (es. OpenAI, Anthropic). Sebbene offra il massimo controllo, richiede la re-implementazione di logiche complesse e soggette a errori: gestione dello storico della conversazione, parsing delle risposte del modello per individuare le chiamate a strumenti, gestione dei tentativi e degli errori. Il carico di lavoro in termini di codice \textit{boilerplate} sarebbe stato proibitivo per un prototipo.
+    
+    \item \textbf{LlamaIndex}: È un framework eccellente, specializzato nel \textit{Retrieval-Augmented Generation} (RAG). Il suo punto di forza è la costruzione e l'interrogazione di indici su grandi volumi di dati non strutturati. Sebbene potente, il suo focus è primariamente sull'arricchimento del contesto tramite recupero di informazioni. Il nostro caso d'uso, invece, è più orientato alla creazione di un agente che esegue azioni tramite un set eterogeneo di strumenti, un'area in cui altri framework offrono un'astrazione più generica.
+    
+    \item \textbf{LangChain}: Si posiziona come un framework general-purpose per la costruzione di applicazioni basate su \gls{llm}. Offre astrazioni di alto livello per concetti come \textit{chains} (catene di chiamate), memoria, agenti e strumenti. La sua architettura modulare semplifica enormemente la definizione di agenti complessi, la gestione del contesto e l'integrazione di tool custom, permettendo di definire la logica dell'agente in modo dichiarativo.
 \end{itemize}
-Infine, il linguaggio \textbf{Dart}, con il suo forte sistema di tipizzazione, la gestione della nullabilità (\textit{sound null safety}) e il supporto integrato per la programmazione asincrona (\texttt{Future} e \texttt{Stream}), si è rivelato uno strumento robusto e produttivo per costruire un'applicazione client-server affidabile.
 
-\section{Database: MongoDB}
-\label{sec:database}
-Il sistema di persistenza dei dati per questo progetto si interfaccia con MongoDB\textsubscript{G}, il database NoSQL\textsubscript{G} già in uso come soluzione di archiviazione primaria presso l'azienda Devess. La presenza di questa tecnologia ha costituito un punto fermo dell'architettura esistente, pertanto il lavoro di tesi si è concentrato sull'integrazione con tale sistema piuttosto che sulla selezione di una nuova base dati. L'approccio adottato è stato quello di analizzare la struttura dati preesistente e sfruttare le funzionalità offerte da MongoDB per realizzare gli obiettivi del progetto.
+\subsection{Soluzione Adottata: LangChain e Protocollo \gls{mcp}}
 
-\subsection{Integrazione con il Modello a Documenti Esistente}
-Il database aziendale è strutturato secondo il modello a documenti di MongoDB, in cui i dati sono memorizzati in collezioni di documenti BSON\textsubscript{G} (Binary JSON). Questo modello, caratterizzato da una notevole flessibilità di schema (\textit{schema-less}), è utilizzato in azienda per accomodare la natura eterogenea dei dati provenienti dalle linee di produzione, che possono includere log\textsubscript{G} di macchinari, misurazioni di sensori e input manuali con formati variabili.
+\begin{figure}[H]
+    \centering
+    \includegraphics[alt={Schema funzionamento MCP}, height=6cm]{img/schemaMCP.png}
+    \caption{schema funzionamneto MCP}
+    \label{fig:schemaMCP}
+\end{figure}
 
-Il lavoro svolto ha richiesto un'analisi delle collezioni esistenti per comprendere come interrogare e manipolare i dati di produzione per gli scopi del progetto. L'interazione con il database è avvenuta rispettando le convenzioni e le strutture dati già in uso, assicurando che il nuovo modulo si integrasse in modo non invasivo nell'ecosistema software preesistente.
+È stato scelto di adottare \textbf{LangChain} come framework di orchestrazione. LangChain ha permesso di astrarre la complessità della comunicazione con l'\gls{llm}, fornendo blocchi pre-costruiti per la gestione della memoria e per l'implementazione del ciclo Ragione-Azione (\textit{ReAct}).
 
-\subsection{Utilizzo dell'Aggregation Framework per l'Analisi Dati}
-Per soddisfare il requisito O03, ovvero l'identificazione di anomalie, colli di bottiglia e il calcolo di metriche come il \textit{lead time}\textsubscript{G}, è stato impiegato l'\textbf{Aggregation Framework} di MongoDB. Questa funzionalità permette di eseguire pipeline di elaborazione dati complesse direttamente sul server del database.
-
-Le query di analisi sono state costruite come una sequenza di stadi di aggregazione per trasformare i dati grezzi in informazioni significative. Tipicamente, una pipeline implementata nel progetto includeva stadi come:
+A complemento di LangChain, è stato definito il \textbf{\gls{mcp} (Model Context Protocol)}. Mentre le API native dei modelli (es. OpenAI Function Calling) legano strettamente l'implementazione a un singolo provider, il \gls{mcp} agisce come un'interfaccia di disaccoppiamento. Questo protocollo custom, implementato sopra LangChain, definisce un contratto agnostico rispetto al modello per la descrizione e l'invocazione degli strumenti. Tale scelta garantisce:
 \begin{itemize}
-    \item \texttt{\$match}: Per filtrare i documenti relativi a un determinato intervallo temporale o a una specifica linea di produzione.
-    \item \texttt{\$group}: Per raggruppare i dati e calcolare valori aggregati, come medie e somme, necessari per le metriche di performance.
-    \item \texttt{\$sort}: Per ordinare i risultati e mettere in evidenza le criticità maggiori.
-    \item \texttt{\$project}: Per rimodellare il documento di output, selezionando solo i campi di interesse per il \textit{back-end}.
+    \item \textbf{Flessibilità}: Possibilità di sostituire il modello \gls{llm} sottostante senza dover riscrivere la logica degli strumenti.
+    \item \textbf{Controllo e Sicurezza}: Centralizzazione della validazione e dell'esecuzione degli strumenti sul nostro back-end.
+    \item \textbf{Estensibilità}: Aggiungere un nuovo strumento si riduce a definire la sua firma secondo il protocollo e implementare la funzione Python corrispondente.
 \end{itemize}
-Questo approccio ha permesso di implementare la logica di analisi richiesta sfruttando uno strumento nativo del database in uso, delegando ad esso parte del carico computazionale. L'output di queste aggregazioni ha costituito la base dati su cui il \textit{back-end} ha poi costruito le risposte per il \textit{front-end} e i suggerimenti per l'LLM.
+Il flusso operativo, che include l'analisi dell'intento, la generazione della chiamata, l'orchestrazione e l'arricchimento del contesto, è il risultato diretto di questa combinazione sinergica.
+
+---
+
+\section{Gestione e Persistenza dei Dati}
+\label{sec:data_persistence}
+
+La gestione dei dati si articola su due livelli distinti: la persistenza dei dati operativi dell'applicazione e la gestione dei set di dati derivati per analisi e versionamento. Le scelte in questo ambito sono state fortemente influenzate dall'infrastruttura preesistente in azienda.
+
+\subsection{Database Primario: una Scelta Contestuale}
+
+Per l'archiviazione dei dati operativi del prototipo, come le sessioni utente e lo storico delle conversazioni, la scelta del sistema di database è stata un fattore critico. Sebbene un'analisi puramente teorica potesse suggerire l'adozione di un database relazionale (SQL) come \textbf{PostgreSQL} per garantire la massima integrità referenziale e consistenza dei dati (proprietà ACID), la realtà operativa ha imposto una direzione diversa.
+
+\subsubsection{Soluzione Adottata: MongoDB}
+L'infrastruttura tecnologica di Devess si basa su \textbf{MongoDB} come database primario per il proprio gestionale. Al fine di garantire la massima compatibilità, ridurre la complessità infrastrutturale e allinearsi alle competenze interne del team, la scelta di adottare MongoDB anche per questo progetto è stata una decisione obbligata.
+
+L'utilizzo di un database già consolidato in azienda ha permesso di:
+\begin{itemize}
+    \item \textbf{Semplificare l'integrazione}: Conformarsi alle convenzioni e agli strumenti di gestione dati esistenti.
+    \item \textbf{Ridurre l'overhead operativo}: Evitare l'introduzione e la manutenzione di un nuovo sistema di database.
+\end{itemize}
+Pur riconoscendo che altri sistemi avrebbero potuto offrire vantaggi specifici, la coerenza con lo stack aziendale è stata il criterio decisionale predominante.
+
+\subsection{Analisi delle Alternative per il Formato di Esportazione Dati}
+
+A valle delle analisi, i dati vengono esportati per essere archiviati, versionati e potenzialmente usati dall'\gls{llm}.
+\begin{itemize}
+    \item \textbf{JSON/JSONL}: Formato leggibile e flessibile, ottimo per dati gerarchici. Tuttavia, per dati tabellari, risulta più verboso del \gls{csv} e meno diretto da importare in fogli di calcolo o strumenti statistici.
+    \item \textbf{Parquet o Arrow}: Formati binari colonnari ad alte prestazioni, ideali per l'analisi di grandi moli di dati (Big Data). Sono lo standard nell'ingegneria dei dati su larga scala. Tuttavia, la loro natura binaria li rende illeggibili all'uomo e difficili da "diffare" con sistemi di controllo di versione come Git, complicando la tracciabilità delle modifiche.
+\end{itemize}
+
+\subsubsection{Soluzione Adottata: Formato \gls{csv}}
+Si è optato per il formato \textbf{\gls{csv}} per la sua combinazione unica di semplicità, interoperabilità e compatibilità. Oltre alla leggibilità universale e alla perfetta integrazione con Python (Pandas) e Git/DVC, un fattore decisivo è stata la sua \textbf{compatibilità nativa con i modelli linguistici avanzati}. Modelli come Claude possono analizzare direttamente il contenuto di un file \gls{csv}, permettendo di passare un contesto dati ricco e strutturato all'agente in modo efficiente, una capacità cruciale per il nostro prototipo.
+---
+Hai perfettamente ragione e mi scuso per l'imprecisione. Ho continuato a includere la "generazione dinamica" come argomento contro Grafana, ma come giustamente sottolinei, se le tue dashboard hanno una struttura fissa, questo argomento non è valido.
+
+Il punto non è che Grafana non può farlo, ma che anche per dashboard strutturalmente fisse, l'approccio con Grafana introduce una complessità che tu hai giudicato superflua per i tuoi scopi. È questo il nucleo della tua decisione.
+
+Riscrivo la sezione eliminando completamente ogni riferimento alla generazione dinamica di dashboard e concentrandomi esclusivamente sulla comparazione tra due architetture valide per visualizzare dati su dashboard fisse, motivando la tua scelta sulla base della semplicità vs complessità.
+
+Ecco la versione corretta, che spero rifletta finalmente il tuo ragionamento con precisione.
+
+Testo LaTeX Corretto (Senza riferimento a Dashboard Dinamiche)
+\section{Interfaccia Utente e Visualizzazione Dati}
+\label{sec:frontend_analysis}
+
+Il front-end ha il compito cruciale di presentare i risultati delle analisi dell'agente \gls{llm} in modo chiaro e intuitivo. Poiché le visualizzazioni richieste dal prototipo hanno una struttura predefinita (ad esempio, un set fisso di grafici che vengono popolati con dati diversi a ogni analisi), la scelta tecnologica si è concentrata sul trovare il modo più efficiente per realizzare questo compito.
+
+\subsection{Analisi delle Alternative per la Visualizzazione Dati}
+
+Sono state valutate due architetture praticabili per visualizzare dati aggiornati su dashboard strutturalmente fisse.
+
+\begin{itemize}
+    \item \textbf{Approccio con Piattaforma Esterna (es. Grafana)}: Questa architettura prevede l'impiego di un sistema specializzato. Il flusso sarebbe il seguente: 
+    \begin{enumerate}
+        \item Il back-end esegue l'analisi e salva i dati risultanti in un database intermedio (es. PostgreSQL).
+        \item Nell'applicazione React, un componente `<iframe>` mostra un pannello Grafana pre-configurato.
+        \item Questo pannello è collegato al database e si aggiorna automaticamente quando i dati cambiano.
+    \end{enumerate}
+    Sebbene tecnicamente robusta, questa soluzione è stata scartata perché introduce una \textbf{complessità infrastrutturale significativa}. La necessità di configurare, gestire e mantenere un server Grafana e un database dedicato è stata giudicata un \textbf{onere sproporzionato} rispetto ai requisiti del prototipo.
+    
+    \item \textbf{Altri Framework JavaScript (Vue.js, Angular)}: Pur essendo alternative valide a React, la loro adozione avrebbe introdotto una frammentazione tecnologica all'interno dello stack di Devess, in contrasto con la strategia aziendale di standardizzazione su React.
+\end{itemize}
+
+\subsection{Soluzione Adottata: Rendering Nativo con React}
+Si è optato per la soluzione architetturalmente più snella: il rendering dei grafici direttamente all'interno dell'applicazione React, utilizzando librerie native come Recharts. In questo flusso, il back-end invia i dati dell'analisi e il front-end li utilizza per popolare i componenti grafici esistenti.
+
+Questa scelta è stata motivata da un'analisi pragmatica dei costi e dei benefici:
+\begin{itemize}
+    \item \textbf{Minima Complessità Architetturale}: Questo approccio evita l'introduzione di qualsiasi componente esterno. La logica è interamente contenuta nel back-end e nel front-end, rendendo il sistema più semplice da sviluppare, testare e distribuire.
+    \item \textbf{Efficienza dei Costi e delle Risorse}: Non richiedendo servizi aggiuntivi, l'architettura scelta minimizza i costi operativi e il carico di manutenzione, un fattore critico in un contesto agile.
+    \item \textbf{Integrazione e Controllo Totale}: Il rendering nativo offre un controllo completo sull'aspetto e sull'interattività dei grafici, garantendo una coerenza visiva e un'esperienza utente fluida che sono più difficili da ottenere con un `<iframe>` integrato.
+\end{itemize}
+
+In sintesi, pur essendo entrambe le architetture capaci di soddisfare i requisiti funzionali, si è scelto l'approccio di rendering nativo perché offre il percorso più diretto e semplice per raggiungere l'obiettivo, incarnando il principio di evitare complessità non strettamente necessaria.
+
+Riassunto delle Correzioni Chiave:
+
+Eliminato ogni riferimento a dashboard dinamiche: L'introduzione e la descrizione dell'alternativa con Grafana ora specificano chiaramente che si sta parlando di visualizzare dati su dashboard fisse.
+
+Focus sulla Complessità vs Semplicità: La motivazione per scartare Grafana è ora unicamente la "complessità infrastrutturale significativa" e l'"onere sproporzionato", che è il cuore della tua argomentazione.
+
+Chiarezza del Confronto: Il testo ora presenta due modi validi per risolvere lo stesso problema (mostrare dati aggiornati su grafici fissi) e spiega perché uno è stato preferito all'altro in base a criteri di ingegneria del software (semplicità, costo, manutenibilità).
+
+Ti ringrazio per la precisazione, è fondamentale che il testo rispecchi esattamente il tuo processo di pensiero. Spero che questa versione sia finalmente quella corretta.
