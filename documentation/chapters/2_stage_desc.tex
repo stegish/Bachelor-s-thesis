@@ -5,13 +5,12 @@
 \section{Introduzione al progetto}
 
 Negli ultimi anni il settore manifatturiero ha intrapreso un percorso di digitalizzazione incentrato sul paradigma dell’\textit{Industria~4.0}. In tale contesto il presente 
-tirocinio, svolto presso l’azienda \textit{Devess~S.r.l.}, si propone di realizzare un \textit{proof‑of‑concept} (\gls{poc}) da implementare in un software gestionale 
-\textit{cross‑platform} sviluppato con Flutter, supportato da un back‑end \textit{Python}/FastAPI con persistenza in MongoDB e integrazione di un modello linguistico di grandi 
+tirocinio, svolto presso l’azienda \textit{Devess~S.r.l.}, si propone di realizzare un \textit{proof‑of‑concept} (\gls{poc}) da implementare nella sezione manager di un software gestionale web sviluppato con React, supportato da un back‑end \textit{Python}/FastAPI con persistenza in MongoDB e integrazione di un modello linguistico di grandi 
 dimensioni (\gls{llm}). L’obiettivo primario è consentire al management di individuare tempestivamente criticità operative, code ai macchinari, \gls{leadtime}, anomalie, colli di 
 bottiglia e di ricevere suggerimenti automatici di ottimizzazione basati sui dati.
 
 Il progetto si articola in otto macro‑fasi (cfr. sezione~\ref{subsec:pianificazione}), per un totale di 300~ore, e combina attività di analisi dati, \textit{prompt engineering}, 
-sviluppo \textit{mobile} e validazione sperimentale. Il tutor aziendale, Nicola Romano, ha seguito l’avanzamento mediante allineamenti settimanali sui risultati ottenuti, 
+sviluppo web e validazione sperimentale. Il tutor aziendale, Nicola Romano, ha seguito l’avanzamento mediante allineamenti settimanali sui risultati ottenuti, 
 facilitando l’accesso alle risorse necessarie.
 
 \section{Analisi preventiva dei rischi}
@@ -22,7 +21,7 @@ facilitando l’accesso alle risorse necessarie.
 \end{risk}
 
 \begin{risk}{Costi e limiti di utilizzo delle \gls{api} LLM}
-\riskdescription{L’uso intensivo delle \gls{api} di ChatGPT potrebbe superare il budget assegnato o incorrere in \textit{rate‑limit}, rendendo la funzionalità economicamente insostenibile}
+\riskdescription{L’uso intensivo delle \gls{api} di Claude potrebbe superare il budget assegnato o incorrere in \textit{rate‑limit}, rendendo la funzionalità economicamente insostenibile}
 \risksolution{Svolgere un’accurata analisi dei costi e monitorare i consumi del prototipo tramite \textit{dashboard} dedicata, al fine di stimare il costo medio d’utilizzo e adeguare di conseguenza il pricing del software}
 \end{risk}
 
@@ -36,7 +35,7 @@ facilitando l’accesso alle risorse necessarie.
 \risksolution{Progettare l’architettura con attenzione alla scalabilità, selezionare il deployment più adatto a un utilizzo su larga scala, adottare containerizzazione e bilanciamento del carico, prevedendo la replica del database e test di \textit{stress}}
 \end{risk}
 
-\begin{risk}{Usabilità dell’interfaccia Flutter}
+\begin{risk}{Usabilità dell’interfaccia web}
 \riskdescription{Un’interfaccia poco intuitiva potrebbe vanificare i benefici dell’automazione, rallentando l’adozione da parte del management}
 \risksolution{Applicare le linee guida Material~3, condurre \textit{usability test} con utenti interni e iterare sulle funzionalità maggiormente critiche}
 \end{risk}
@@ -53,14 +52,14 @@ facilitando l’accesso alle risorse necessarie.
   \endhead
   \rowcolors{1}{tableRowA}{tableRowB}
 
-  O01 & Dashboard Flutter che visualizzi dati di produzione, anomalie e metriche operative in tempo reale, integrata nel gestionale mobile di Devess. \\ \hline
-  O02 & Integrazione di GPT come \gls{llm} per restituire risposte e suggerimenti in linguaggio naturale basati sui dati. \\ \hline
+  O01 & Dashboard React che visualizzi dati di produzione, anomalie e metriche operative in tempo reale, integrata nella sezione manager del gestionale di Devess. \\ \hline
+  O02 & Integrazione di Claude 4 come \gls{llm} per restituire risposte e suggerimenti in linguaggio naturale basati sui dati. \\ \hline
   O03 & Implementazione di funzioni analitiche in grado di identificare anomalie nei processi produttivi. \\ \hline
   O04 & Sistema di autenticazione sicura con controllo degli accessi. \\ \hline
   O05 & Interfaccia utente intuitiva con flussi di navigazione semplificati per operatori di produzione. \\ \hline
-  D01 & Realizzazione di una versione \textit{web} dell'applicazione, integrata nel gestionale Devess. \\ \hline
-  D02 & Possibilità di interagire con un chatbot basato su \gls{llm} per richiedere chiarimenti o soluzioni mirate. \\ \hline
-  D03 & Sistema di notifiche push o e-mail proattive al manifestarsi di problemi o rallentamenti nella produzione. \\ \hline
+  O06 & Possibilità di ricevere correzzioni concrete da parte del \gls{llm} da poter approvare. \\ \hline
+  D01 & Possibilità di interagire con un chatbot basato su \gls{llm} per richiedere chiarimenti o soluzioni mirate. \\ \hline
+  D02 & Sistema di notifiche push o e-mail proattive al manifestarsi di problemi o rallentamenti nella produzione. \\ \hline
   F01 & Sincronizzazione offline con riallineamento automatico al ripristino della connettività. \\ \hline
   F02 & Animazioni fluide e tempi di caricamento percepiti veloci. \\ \hline
   F03 & Inserimento comandi in linguaggio naturale. \\ \hline
@@ -79,8 +78,8 @@ Il lavoro è suddiviso in otto settimane; ciascuna prevede attività specifiche,
 \begin{enumerate}
     \item \textbf{Settimana~1 — Onboarding e configurazione ambienti (40~h)}
         \begin{itemize}
-            \item Configurazione degli ambienti \textit{Python}/FastAPI, Flutter e MongoDB.
-            \item Studio delle \gls{api} di ChatGPT e definizione degli \textit{use case} AI.
+            \item Configurazione degli ambienti \textit{Python}/FastAPI, React e MongoDB.
+            \item Studio delle \gls{api} di Claude e definizione degli \textit{use case} AI.
         \end{itemize}
     \item \textbf{Settimana~2 — Prompt engineering e integrazione base LLM (40~h)}
         \begin{itemize}
@@ -100,16 +99,16 @@ Il lavoro è suddiviso in otto settimane; ciascuna prevede attività specifiche,
     \item \textbf{Settimana~5 — Validazione algoritmi e suggerimenti AI (40~h)}
         \begin{itemize}
             \item Valutazione del corretto funzionamento degli algoritmi di analisi dati.
-            \item Integrazione con ChatGPT per suggerimenti contestuali.
+            \item Integrazione con Claude per suggerimenti contestuali.
         \end{itemize}
     \item \textbf{Settimana~6 — Automazione e performance (40~h)}
         \begin{itemize}
             \item Scheduler per analisi periodiche.
             \item Ottimizzazione delle query e monitoraggio dei costi operativi.
         \end{itemize}
-    \item \textbf{Settimana~7 — UI e dashboard Flutter (40~h)}
+    \item \textbf{Settimana~7 — UI e dashboard React (40~h)}
         \begin{itemize}
-            \item Progettazione del \textit{design system} secondo Material~3.
+            \item Progettazione del \textit{design system} rendendolo più intuitivo possibile.
             \item Implementazione degli schermi di monitoraggio e test multi‑device.
         \end{itemize}
     \item \textbf{Settimana~8 — QA, MLOps e rilascio (20~h)}
