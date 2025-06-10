@@ -1,4 +1,3 @@
-
 % -------------------- Acronimi --------------------
 \newacronym{api}{API}{Application Programming Interface}
 \newacronym{sdk}{SDK}{Software Development Kit}
@@ -7,11 +6,16 @@
 \newacronym{poc}{PoC}{Proof of Concept}
 \newacronym{kpi}{KPI}{Key Performance Indicator}
 \newacronym{llm}{LLM}{Large Language Model}
-
-% --- NUOVI ACRONIMI AGGIUNTI ---
 \newacronym{mcp}{MCP}{Model Context Protocol}
 \newacronym{csv}{CSV}{Comma-Separated Values}
 
+
+% -------------------- Voci del Glossario --------------------
+\newglossaryentry{agile}{
+    name={agile},
+    sort=agile,
+    description={Approccio allo sviluppo software e alla gestione dei progetti basato su cicli di lavoro iterativi e incrementali. Le metodologie agili, come Scrum, privilegiano la flessibilità, la collaborazione con il cliente e la capacità di rispondere rapidamente al cambiamento.}
+}
 
 \newglossaryentry{api_entry}{
     name={API (Application Programming Interface)},
@@ -19,16 +23,88 @@
     description={Insieme di regole, specifiche e strumenti che definiscono come i componenti software debbano interagire tra loro. Un’API espone un’interfaccia attraverso la quale un’applicazione può richiedere servizi, dati o funzionalità a un’altra, nascondendo i dettagli di implementazione interni.}
 }
 
-\newglossaryentry{sdk_entry}{
-    name={SDK (Software Development Kit)},
-    sort=sdk,
-    description={Insieme di strumenti di sviluppo software che semplifica la creazione di applicazioni per una specifica piattaforma o linguaggio di programmazione, fornendo librerie, documentazione, esempi di codice e altri tool.}
+\newglossaryentry{backend}{
+    name={back-end},
+    sort=backend,
+    description={La parte di un'applicazione software che non è direttamente accessibile dall'utente finale. Comprende la logica di business, l'interazione con i database, le API e l'elaborazione dei dati. È il "motore" del sistema, in contrapposizione al \gls{frontend}.}
 }
 
-\newglossaryentry{uml_entry}{
-    name={UML (Unified Modeling Language)},
-    sort=uml,
-    description={Linguaggio di modellazione standardizzato utilizzato nell'ingegneria del software per visualizzare, specificare, costruire e documentare gli artefatti di un sistema software.}
+\newglossaryentry{csv_entry}{
+    name={CSV (Comma-Separated Values)},
+    sort=csv,
+    description={Formato di file testuale utilizzato per l'archiviazione di dati in forma tabellare. Ogni riga del file rappresenta una riga della tabella e i campi al suo interno sono separati da un carattere delimitatore, tipicamente una virgola.}
+}
+
+\newglossaryentry{diffare}{
+    name={diffare},
+    sort=diffare,
+    description={Verbo del gergo informatico, derivato dal comando Unix \texttt{diff}. Significa confrontare due versioni di un file di testo o di un codice sorgente per evidenziarne le differenze. È una pratica fondamentale nei sistemi di controllo di versione come Git.}
+}
+
+\newglossaryentry{flutter}{
+    name={Flutter},
+    sort=flutter,
+    description={Toolkit UI open-source sviluppato da Google per la creazione di interfacce utente performanti e visivamente coerenti per applicazioni mobile, web e desktop, partendo da un'unica base di codice in linguaggio Dart.}
+}
+
+\newglossaryentry{framework}{
+    name={framework},
+    sort=framework,
+    description={In informatica, una struttura software di base che fornisce funzionalità generiche e un'architettura predefinita. Gli sviluppatori estendono il framework con codice specifico per l'applicazione, accelerando lo sviluppo e promuovendo pratiche standard.}
+}
+
+\newglossaryentry{frontend}{
+    name={front-end},
+    sort=frontend,
+    description={La parte di un'applicazione software con cui l'utente interagisce direttamente, nota anche come interfaccia utente (UI). Comprende gli elementi visivi (pulsanti, menu, grafici) e la logica di presentazione dei dati.}
+}
+
+\newglossaryentry{kpi_entry}{
+    name={KPI (Key Performance Indicator)},
+    sort=kpi,
+    description={Metrica quantitativa utilizzata per valutare l’efficacia di un processo o di un’attività aziendale in rapporto agli obiettivi prefissati, supportando decisioni basate su dati.}
+}
+
+\newglossaryentry{langchain}{
+    name={LangChain},
+    sort=langchain,
+    description={Framework open-source per lo sviluppo di applicazioni basate su modelli linguistici (LLM). Semplifica l'orchestrazione di catene complesse (\textit{chains}), la gestione della memoria conversazionale e l'integrazione con fonti dati e strumenti esterni.}
+}
+
+\newglossaryentry{leadtime}{
+    name={lead time},
+    sort=lead time,
+    description={Il termine \textit{lead time} indica l'intervallo di tempo che intercorre tra l'avvio e il completamento di un processo produttivo o logistico, utilizzato per misurare l'efficienza operativa e i tempi di risposta del sistema.}
+}
+
+\newglossaryentry{llm_entry}{
+    name={LLM (Large Language Model)},
+    sort=llm,
+    description={Modello di intelligenza artificiale basato su architetture di reti neurali profonde, addestrato su vasti corpora di testo per comprendere, generare e manipolare il linguaggio umano in modo coerente e contestualmente appropriato.}
+}
+
+\newglossaryentry{log}{
+    name={log},
+    sort=log,
+    description={In ambito informatico, il termine \textit{log} indica un registro cronologico di eventi, messaggi o transazioni generati da un sistema, applicazione o dispositivo, utilizzato per il monitoraggio, la diagnostica e l’audit.}
+}
+
+\newglossaryentry{mcp_entry}{
+    name={MCP (Model Context Protocol)},
+    sort=mcp,
+    description={Protocollo custom che definisce le regole di interazione tra un Large Language Model (LLM) e strumenti esterni (\textit{tools}). Specifica il vocabolario degli strumenti disponibili, la sintassi per la loro invocazione e gli schemi per la validazione dei dati.}
+}
+
+\newglossaryentry{middleware}{
+    name={middleware},
+    sort=middleware,
+    description={Software che agisce come intermediario tra due o più componenti applicativi, facilitandone la comunicazione e l'interoperabilità. Nel contesto di questo lavoro, si riferisce al livello logico che orchestra la comunicazione tra l'agente LLM e gli strumenti esterni.}
+}
+
+\newglossaryentry{nosql}{
+    name={NoSQL},
+    sort=nosql,
+    description={Famiglia di sistemi di gestione di basi di dati non relazionali, progettati per offrire elevata scalabilità e flessibilità. I modelli più comuni includono database a documenti (come MongoDB), a colonne, chiave-valore e a grafo.}
 }
 
 \newglossaryentry{pmi_entry}{
@@ -43,58 +119,14 @@
     description={Realizzazione pratica e preliminare di un'idea o di un metodo per dimostrarne la fattibilità e verificarne il potenziale. Un PoC non è un prototipo, ma una prova che il concetto fondamentale funziona.}
 }
 
-\newglossaryentry{kpi_entry}{
-    name={KPI (Key Performance Indicator)},
-    sort=kpi,
-    description={Metrica quantitativa utilizzata per valutare l’efficacia di un processo o di un’attività aziendale in rapporto agli obiettivi prefissati, supportando decisioni basate su dati.}
+\newglossaryentry{sdk_entry}{
+    name={SDK (Software Development Kit)},
+    sort=sdk,
+    description={Insieme di strumenti di sviluppo software che semplifica la creazione di applicazioni per una specifica piattaforma o linguaggio di programmazione, fornendo librerie, documentazione, esempi di codice e altri tool.}
 }
 
-\newglossaryentry{llm_entry}{
-    name={LLM (Large Language Model)},
-    sort=llm,
-    description={Modello di intelligenza artificiale basato su architetture di reti neurali profonde, addestrato su vasti corpora di testo per comprendere, generare e manipolare il linguaggio umano in modo coerente e contestualmente appropriato.}
-}
-
-\newglossaryentry{leadtime}{
-    name={lead time},
-    sort=lead time,
-    description={Il termine \textit{lead time} indica l'intervallo di tempo che intercorre tra l'avvio e il completamento di un processo produttivo o logistico, utilizzato per misurare l'efficienza operativa e i tempi di risposta del sistema.}
-}
-
-\newglossaryentry{log}{
-    name={log},
-    sort=log,
-    description={In ambito informatico, il termine \textit{log} indica un registro cronologico di eventi, messaggi o transazioni generati da un sistema, applicazione o dispositivo, utilizzato per il monitoraggio, la diagnostica e l’audit.}
-}
-
-% --- NUOVE VOCI DEL GLOSSARIO AGGIUNTE ---
-
-\newglossaryentry{nosql}{
-    name={NoSQL},
-    sort=nosql,
-    description={Famiglia di sistemi di gestione di basi di dati non relazionali, progettati per offrire elevata scalabilità e flessibilità. I modelli più comuni includono database a documenti (come MongoDB), a colonne, chiave-valore e a grafo.}
-}
-
-\newglossaryentry{langchain}{
-    name={LangChain},
-    sort=langchain,
-    description={Framework open-source per lo sviluppo di applicazioni basate su modelli linguistici (LLM). Semplifica l'orchestrazione di catene complesse (\textit{chains}), la gestione della memoria conversazionale e l'integrazione con fonti dati e strumenti esterni.}
-}
-
-\newglossaryentry{flutter}{
-    name={Flutter},
-    sort=flutter,
-    description={Toolkit UI open-source sviluppato da Google per la creazione di interfacce utente performanti e visivamente coerenti per applicazioni mobile, web e desktop, partendo da un'unica base di codice in linguaggio Dart.}
-}
-
-\newglossaryentry{mcp_entry}{
-    name={MCP (Model Context Protocol)},
-    sort=mcp,
-    description={Protocollo custom che definisce le regole di interazione tra un Large Language Model (LLM) e strumenti esterni (\textit{tools}). Specifica il vocabolario degli strumenti disponibili, la sintassi per la loro invocazione e gli schemi per la validazione dei dati.}
-}
-
-\newglossaryentry{csv_entry}{
-    name={CSV (Comma-Separated Values)},
-    sort=csv,
-    description={Formato di file testuale utilizzato per l'archiviazione di dati in forma tabellare. Ogni riga del file rappresenta una riga della tabella e i campi al suo interno sono separati da un carattere delimitatore, tipicamente una virgola.}
+\newglossaryentry{uml_entry}{
+    name={UML (Unified Modeling Language)},
+    sort=uml,
+    description={Linguaggio di modellazione standardizzato utilizzato nell'ingegneria del software per visualizzare, specificare, costruire e documentare gli artefatti di un sistema software.}
 }
