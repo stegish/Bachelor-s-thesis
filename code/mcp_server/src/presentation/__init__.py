@@ -1,0 +1,1 @@
+"""Presentation layer - MCP protocol implementation"""

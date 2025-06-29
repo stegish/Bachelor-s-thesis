@@ -1,0 +1,65 @@
+# docker-compose.yml - Updated without version attribute
+services:
+  # LLM Service for Manufacturing Analytics
+  llm_service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: manufacturing_llm
+    restart: unless-stopped
+    environment:
+      # Claude API Configuration
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      MODEL_NAME: ${MODEL_NAME:-claude-3-sonnet-20240229}
+      MAX_TOKENS: ${MAX_TOKENS:-4096}
+      TEMPERATURE: ${TEMPERATURE:-0.7}
+      
+      # MongoDB Configuration
+      MONGO_URI: ${MONGO_URI}
+      DATABASE_NAME: ${DATABASE_NAME:-orders_db}
+      
+      # MCP Configuration
+      MCP_SERVER_URL: ${MCP_SERVER_URL:-http://mcp_server:5002}
+      
+      # Application Configuration
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "5001:5001"
+    networks:
+      - manufacturing_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    volumes:
+      - llm_logs:/app/logs
+      - llm_uploads:/tmp/llm_uploads
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: manufacturing_llm_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - manufacturing_network
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  llm_logs:
+    driver: local
+  llm_uploads:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  manufacturing_network:
+    driver: bridge

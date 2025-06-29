@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import logging
 import time
+from .routes.csv_export import router as csv_router
 from motor.motor_asyncio import AsyncIOMotorClient
 from dependency_injector import providers
 from .routes.health import router as health_router
@@ -160,6 +161,7 @@ async def internal_error_handler(request: Request, exc):
 
 # Include routers
 app.include_router(health_router)
+app.include_router(csv_router, prefix=settings.api_prefix)
 app.include_router(analytics_router, prefix=settings.api_prefix)
 app.include_router(export_router, prefix=settings.api_prefix)
 app.include_router(config_router, prefix=settings.api_prefix)
