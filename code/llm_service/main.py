@@ -35,6 +35,7 @@ async def main():
         'src.presentation.api.routes.health',
         'src.presentation.api.routes.mcp',
         'src.presentation.api.routes.suggestions',
+        'src.presentation.api.routes.recommendations',
         'src.presentation.api.routes.config'
     ])
     

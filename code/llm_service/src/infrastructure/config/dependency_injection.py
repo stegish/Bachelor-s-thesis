@@ -5,6 +5,9 @@ from ..persistence import MongoDBContextRepository, MemoryChatRepository
 from ...application.use_cases import *
 from ...application.services import *
 from .settings import Settings
+from ..persistence.recommendation_repository import MongoRecommendationRepository
+from ...application.use_cases.generate_recommendation import GenerateRecommendationUseCase
+
 
 class Container(containers.DeclarativeContainer):
     """DI Container following Dependency Inversion Principle"""
@@ -17,6 +20,12 @@ class Container(containers.DeclarativeContainer):
     llm_service = providers.Singleton(
         AnthropicLLMService,
         settings=settings
+    )
+
+    recommendation_repository = providers.Singleton(
+        MongoRecommendationRepository,
+        connection_string=settings.provided.get_ai_manager_uri,
+        database_name=settings.provided.ai_manager_db_name
     )
     
     mcp_client = providers.Singleton(
@@ -71,4 +80,13 @@ class Container(containers.DeclarativeContainer):
     get_suggestions_use_case = providers.Factory(
         GetSuggestionsUseCase,
         llm_service=llm_service
+    )
+
+    generate_recommendation_use_case = providers.Factory(
+        GenerateRecommendationUseCase,
+        llm_service=llm_service,
+        recommendation_repository=recommendation_repository,
+        context_repository=context_repository,
+        prompt_builder=prompt_builder,
+        analytics_api_url=settings.provided.analytics_service_url
     )

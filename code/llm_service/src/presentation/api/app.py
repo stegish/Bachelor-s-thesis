@@ -8,6 +8,8 @@ from .routes import analysis, chat, config, health, mcp, suggestions  # Added su
 from .middleware.error_handler import ErrorHandlerMiddleware
 from .middleware.logging_middleware import LoggingMiddleware
 from ...infrastructure.config import Settings, Container
+from .routes import analysis, chat, config, health, mcp, suggestions, recommendations  # ADD recommendations
+
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +59,9 @@ def create_app(container: Container) -> FastAPI:
     # Add custom middleware
     app.add_middleware(ErrorHandlerMiddleware)
     app.add_middleware(LoggingMiddleware)
+
+    app.include_router(recommendations.router)  # ADD THIS LINE after the other routers
+
     
     # Add request timing middleware
     @app.middleware("http")
@@ -90,6 +95,7 @@ def create_app(container: Container) -> FastAPI:
                 "chat": "/api/v1/chat",
                 "mcp": "/api/v1/mcp",
                 "suggestions": "/api/v1/suggestions",
+                "recommendations": "/api/v1/recommendations",
                 "config": "/config"
             }
         }

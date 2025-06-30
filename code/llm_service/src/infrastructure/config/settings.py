@@ -5,6 +5,11 @@ from typing import Optional
 class Settings(BaseSettings):
     """Application settings following 12-factor app principles"""
     
+    # AI Manager Database Configuration (ADD THESE)
+    ai_manager_db_uri: Optional[str] = Field(default=None, alias='AI_MANAGER_DB_URI')
+    ai_manager_db_name: str = Field(default='AI-manager', alias='AI_MANAGER_DB_NAME')
+
+
     # API Keys
     anthropic_api_key: str = Field(..., alias='ANTHROPIC_API_KEY')
     
@@ -17,6 +22,10 @@ class Settings(BaseSettings):
     mongo_uri: str = Field(..., alias='MONGO_URI')
     database_name: str = Field(default='orders_db', alias='DATABASE_NAME')
     
+    # Analytics Service Configuration (ADD THIS)
+    analytics_service_url: str = Field(default='http://analytics_api:5000', alias='ANALYTICS_SERVICE_URL')
+
+
     # MCP Configuration
     mcp_server_url: str = Field(default='http://mcp_server:5002', alias='MCP_SERVER_URL')
     
@@ -46,3 +55,8 @@ class Settings(BaseSettings):
         if 'anthropic_api_key' in data:
             data['anthropic_api_key'] = '***' + data['anthropic_api_key'][-4:]
         return data
+    
+    @property
+    def get_ai_manager_uri(self) -> str:
+        """Get AI Manager DB URI, defaults to main MongoDB if not specified"""
+        return self.ai_manager_db_uri or self.mongo_uri

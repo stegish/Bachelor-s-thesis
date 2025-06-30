@@ -13,6 +13,9 @@ services:
       MODEL_NAME: ${MODEL_NAME:-claude-3-sonnet-20240229}
       MAX_TOKENS: ${MAX_TOKENS:-4096}
       TEMPERATURE: ${TEMPERATURE:-0.7}
+      AI_MANAGER_DB_URI: ${AI_MANAGER_DB_URI}
+      AI_MANAGER_DB_NAME: ${AI_MANAGER_DB_NAME:-AI-manager}
+      ANALYTICS_SERVICE_URL: ${ANALYTICS_SERVICE_URL:-http://analytics_api:5000}
       
       # MongoDB Configuration
       MONGO_URI: ${MONGO_URI}
