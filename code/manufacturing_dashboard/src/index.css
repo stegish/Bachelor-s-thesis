@@ -1,118 +1,94 @@
+/* src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles */
+/* Custom base styles */
 @layer base {
-  html {
-    scroll-behavior: smooth;
-  }
-  
   body {
     @apply text-gray-900 antialiased;
   }
+  
+  h1 {
+    @apply text-4xl font-bold;
+  }
+  
+  h2 {
+    @apply text-3xl font-semibold;
+  }
+  
+  h3 {
+    @apply text-2xl font-semibold;
+  }
+  
+  h4 {
+    @apply text-xl font-semibold;
+  }
 }
 
+/* Custom component styles */
 @layer components {
-  /* Custom scrollbar */
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: theme('colors.gray.400') theme('colors.gray.100');
+  .btn-primary {
+    @apply bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2 rounded-md font-medium transition-colors;
   }
   
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  .card {
+    @apply bg-white shadow rounded-lg;
   }
   
-  .custom-scrollbar::-webkit-scrollbar-track {
-    @apply bg-gray-100;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-gray-400 rounded-full;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-500;
-  }
-  
-  /* Loading skeleton */
-  .skeleton {
-    @apply animate-pulse bg-gray-200 rounded;
-  }
-  
-  /* Prose overrides for better readability */
-  .prose {
-    @apply text-gray-700;
-  }
-  
-  .prose p {
-    @apply mb-4;
-  }
-  
-  .prose h1,
-  .prose h2,
-  .prose h3,
-  .prose h4 {
-    @apply font-semibold text-gray-900 mb-4;
-  }
-  
-  .prose ul {
-    @apply list-disc list-inside mb-4;
-  }
-  
-  .prose ol {
-    @apply list-decimal list-inside mb-4;
-  }
-  
-  .prose li {
-    @apply mb-2;
-  }
-  
-  /* Chart styles */
-  .recharts-tooltip-wrapper {
-    @apply !outline-none;
-  }
-  
-  .recharts-default-tooltip {
-    @apply !bg-white !border !border-gray-200 !rounded-lg !shadow-lg;
-  }
-  
-  .recharts-tooltip-label {
-    @apply !text-gray-900 !font-medium;
-  }
-  
-  .recharts-tooltip-item {
-    @apply !text-gray-700;
+  .input {
+    @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500;
   }
 }
 
+/* Custom utility styles */
 @layer utilities {
-  /* Animation utilities */
-  .animate-slide-in {
-    animation: slideIn 0.3s ease-out;
-  }
-  
   .animate-fade-in {
-    animation: fadeIn 0.3s ease-out;
-  }
-  
-  @keyframes slideIn {
-    from {
-      transform: translateX(100%);
-    }
-    to {
-      transform: translateX(0);
-    }
+    animation: fadeIn 0.5s ease-in-out;
   }
   
   @keyframes fadeIn {
     from {
       opacity: 0;
+      transform: translateY(10px);
     }
     to {
       opacity: 1;
+      transform: translateY(0);
     }
+  }
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500;
+}
+
+/* Loading spinner animation */
+.spinner {
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #3b82f6;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }

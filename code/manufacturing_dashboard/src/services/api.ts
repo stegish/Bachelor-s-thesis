@@ -7,8 +7,7 @@ import {
   QueueAnalysis,
   OperatorPerformance,
   Recommendation,
-  Anomaly,
-  ApiResponse
+  Anomaly
 } from '../types';
 
 // API URLs from environment variables
@@ -86,6 +85,14 @@ export const analyticsService = {
       responseType: 'blob'
     });
     return response.data;
+  },
+
+  // Download all CSV files as ZIP
+  downloadAllFiles: async (): Promise<Blob> => {
+    const response = await analyticsApi.get('/api/v1/csv/download-all', {
+      responseType: 'blob'
+    });
+    return response.data;
   }
 };
 
@@ -114,22 +121,21 @@ export const llmService = {
   },
 
   // Get specific recommendation by ID
-  getRecommendationById: async (id: string): Promise<Recommendation> => {
-    const response = await llmApi.get(`/api/v1/recommendations/${id}`);
+  getRecommendationById: async (analysisId: string): Promise<Recommendation> => {
+    const response = await llmApi.get(`/api/v1/recommendations/${analysisId}`);
     return response.data;
   },
 
-  // Analyze with custom question
-  analyze: async (question: string, includeContext: boolean = true): Promise<any> => {
-    const response = await llmApi.post('/api/v1/analysis', {
-      question,
-      include_db_context: includeContext
+  // Generate and notify
+  generateAndNotify: async (customPrompt?: string): Promise<any> => {
+    const response = await llmApi.post('/api/v1/recommendations/generate-and-notify', {
+      custom_prompt: customPrompt
     });
     return response.data;
   },
 
-  // Chat with context
-  chat: async (message: string, sessionId: string): Promise<any> => {
+  // Chat with LLM
+  chat: async (message: string, sessionId?: string): Promise<any> => {
     const response = await llmApi.post('/api/v1/chat', {
       message,
       session_id: sessionId
@@ -137,29 +143,31 @@ export const llmService = {
     return response.data;
   },
 
-  // Get suggestions based on metrics
-  getSuggestions: async (metrics: any): Promise<any> => {
-    const response = await llmApi.post('/api/v1/suggestions', {
-      metrics
+  // Analyze custom question
+  analyze: async (question: string, includeContext: boolean = true): Promise<any> => {
+    const response = await llmApi.post('/api/v1/analyze', {
+      question,
+      include_db_context: includeContext
     });
     return response.data;
   }
 };
 
-// Utility function to detect anomalies from data
-export const detectAnomalies = (data: any): Anomaly[] => {
+// Anomaly detection function
+export const detectAnomalies = (analyticsData: any): Anomaly[] => {
   const anomalies: Anomaly[] = [];
   
-  // Check machine efficiency
-  if (data.machine_metrics?.data) {
-    data.machine_metrics.data.forEach((machine: MachineMetrics) => {
-      if (machine.efficiency_percentage !== null && machine.efficiency_percentage < 70) {
+  // Check machine metrics for anomalies
+  if (analyticsData.machine_metrics) {
+    analyticsData.machine_metrics.forEach((machine: MachineMetrics) => {
+      // Low efficiency anomaly
+      if (machine.efficiency_percentage && machine.efficiency_percentage < 70) {
         anomalies.push({
-          id: `anomaly-${machine.machine_name}-efficiency`,
+          id: `anomaly-eff-${machine.machine_name}`,
           type: 'efficiency',
-          severity: machine.efficiency_percentage < 50 ? 'high' : 'medium',
+          severity: machine.efficiency_percentage < 50 ? 'critical' : 'high',
           machine: machine.machine_name,
-          description: `Machine ${machine.machine_name} efficiency is ${machine.efficiency_percentage.toFixed(1)}%`,
+          description: `Low efficiency: ${machine.efficiency_percentage.toFixed(1)}%`,
           detected_at: new Date().toISOString(),
           metrics: {
             current_value: machine.efficiency_percentage,
@@ -168,15 +176,57 @@ export const detectAnomalies = (data: any): Anomaly[] => {
           }
         });
       }
+      
+      // High queue delay anomaly
+      if (machine.avg_queue_delay > 4) {
+        anomalies.push({
+          id: `anomaly-queue-${machine.machine_name}`,
+          type: 'delay',
+          severity: machine.avg_queue_delay > 8 ? 'critical' : 'medium',
+          machine: machine.machine_name,
+          description: `High queue delay: ${machine.avg_queue_delay.toFixed(1)} hours`,
+          detected_at: new Date().toISOString(),
+          metrics: {
+            current_value: machine.avg_queue_delay,
+            expected_value: 2,
+            deviation_percentage: ((machine.avg_queue_delay - 2) / 2) * 100
+          }
+        });
+      }
     });
   }
   
-  // Check queue delays
-  if (data.queue_analysis?.data) {
-    data.queue_analysis.data.forEach((queue: QueueAnalysis) => {
+  // Check order timeline for delays
+  if (analyticsData.order_timeline) {
+    const delayedOrders = analyticsData.order_timeline.filter(
+      (order: OrderTimeline) => order.delay_days && order.delay_days > 2
+    );
+    
+    if (delayedOrders.length > 0) {
+      const avgDelay = delayedOrders.reduce((sum: number, order: OrderTimeline) => 
+        sum + (order.delay_days || 0), 0) / delayedOrders.length;
+      
+      anomalies.push({
+        id: 'anomaly-delivery-delays',
+        type: 'delay',
+        severity: avgDelay > 5 ? 'high' : 'medium',
+        description: `${delayedOrders.length} orders with delivery delays (avg: ${avgDelay.toFixed(1)} days)`,
+        detected_at: new Date().toISOString(),
+        metrics: {
+          current_value: avgDelay,
+          expected_value: 0,
+          deviation_percentage: 100
+        }
+      });
+    }
+  }
+  
+  // Check for bottlenecks
+  if (analyticsData.queue_analysis) {
+    analyticsData.queue_analysis.forEach((queue: QueueAnalysis) => {
       if (queue.is_bottleneck) {
         anomalies.push({
-          id: `anomaly-${queue.phase_name}-bottleneck`,
+          id: `anomaly-bottleneck-${queue.phase_name}`,
           type: 'bottleneck',
           severity: queue.avg_queue_delay > 10 ? 'critical' : 'high',
           phase: queue.phase_name,
@@ -193,4 +243,11 @@ export const detectAnomalies = (data: any): Anomaly[] => {
   }
   
   return anomalies;
+};
+
+// Export all services
+export default {
+  analytics: analyticsService,
+  llm: llmService,
+  detectAnomalies
 };
