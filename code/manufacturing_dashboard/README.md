@@ -1,0 +1,210 @@
+# Manufacturing Analytics Dashboard
+
+A React-based frontend for visualizing manufacturing analytics data and AI-powered recommendations.
+
+## Features
+
+- **Real-time Analytics Dashboard**: Visualize production metrics, machine utilization, and order status
+- **Machine Analytics**: Detailed view of machine performance, efficiency, and utilization
+- **Anomaly Detection**: View and manage production anomalies with AI-suggested solutions
+- **AI Recommendations**: Get intelligent insights and recommendations powered by LLM
+- **Interactive Charts**: Responsive data visualization using Recharts
+- **Modern UI**: Clean, responsive design with Tailwind CSS
+
+## Prerequisites
+
+- Node.js 16+ and npm/yarn
+- Running backend services:
+  - Manufacturing Analytics API (port 5000)
+  - LLM Service API (port 5001)
+
+## Installation
+
+1. Clone the repository and navigate to the frontend directory
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create environment file:
+```bash
+cp .env.example .env
+```
+
+4. Update `.env` with your backend API URLs:
+```
+REACT_APP_ANALYTICS_API=http://localhost:5000
+REACT_APP_LLM_API=http://localhost:5001
+```
+
+## Development
+
+Start the development server:
+```bash
+npm start
+```
+
+The application will be available at `http://localhost:3000`
+
+## Project Structure
+
+```
+src/
+├── components/
+│   ├── Dashboard/        # Main dashboard views
+│   ├── Analytics/        # Machine analytics components
+│   ├── Anomalies/        # Anomaly detection views
+│   ├── Recommendations/  # AI recommendations view
+│   ├── common/          # Reusable components
+│   └── layout/          # Layout components
+├── services/            # API service layer
+├── hooks/              # Custom React hooks
+├── types/              # TypeScript type definitions
+├── utils/              # Utility functions
+└── styles/             # Global styles
+```
+
+## Available Views
+
+### 1. Overview Dashboard
+- Key performance metrics
+- Machine utilization charts
+- Order status distribution
+- Production bottlenecks
+- Summary statistics
+
+### 2. Machine Analytics
+- Individual machine performance
+- Utilization vs target comparison
+- Efficiency metrics
+- Operator information
+
+### 3. Anomalies
+- Real-time anomaly detection
+- Severity classification
+- Proposed solutions
+- Accept/reject workflow
+
+### 4. AI Insights
+- LLM-generated analysis
+- Priority actions
+- Recommendations by type
+- Custom query interface
+
+## API Integration
+
+The frontend integrates with two backend services:
+
+### Manufacturing Analytics API
+- Endpoint: `http://localhost:5000`
+- Provides: CSV data, analytics summaries, file exports
+
+### LLM Service API
+- Endpoint: `http://localhost:5001`
+- Provides: AI recommendations, custom analysis, chat functionality
+
+## Key Technologies
+
+- **React 18**: UI framework
+- **TypeScript**: Type safety
+- **Tailwind CSS**: Utility-first styling
+- **Recharts**: Data visualization
+- **React Query**: Data fetching and caching
+- **Axios**: HTTP client
+- **Lucide React**: Icon library
+- **date-fns**: Date utilities
+
+## Customization
+
+### Styling
+- Tailwind configuration: `tailwind.config.js`
+- Global styles: `src/index.css`
+- Component styles use Tailwind utility classes
+
+### API Configuration
+- Update API endpoints in `.env`
+- Modify service layer in `src/services/api.ts`
+
+### Chart Colors
+- Chart color palette in `src/utils/index.ts`
+- Modify `CHART_COLORS` object
+
+## Building for Production
+
+```bash
+npm run build
+```
+
+This creates an optimized production build in the `build` folder.
+
+## Deployment
+
+### Using Docker
+
+Create a `Dockerfile`:
+
+```dockerfile
+FROM node:18-alpine as build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=build /app/build /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+Build and run:
+```bash
+docker build -t manufacturing-dashboard .
+docker run -p 3000:80 manufacturing-dashboard
+```
+
+### Environment Variables
+
+For production deployment, ensure these environment variables are set:
+- `REACT_APP_ANALYTICS_API`: Manufacturing analytics API URL
+- `REACT_APP_LLM_API`: LLM service API URL
+
+## Troubleshooting
+
+### CORS Issues
+If you encounter CORS errors:
+1. Ensure backend services have proper CORS configuration
+2. Check that API URLs in `.env` are correct
+3. Use a proxy configuration in development if needed
+
+### Data Not Loading
+1. Verify backend services are running
+2. Check browser console for API errors
+3. Ensure MongoDB has data
+
+### Performance Issues
+1. React Query caches data for 5 minutes by default
+2. Adjust `staleTime` in query configurations
+3. Implement pagination for large datasets
+
+## Future Enhancements
+
+- [ ] User authentication integration
+- [ ] Real-time WebSocket updates
+- [ ] Export functionality for charts
+- [ ] Mobile-responsive improvements
+- [ ] Dark mode support
+- [ ] Internationalization (i18n)
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+This project is proprietary to Devess S.r.l.
