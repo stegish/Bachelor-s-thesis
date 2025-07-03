@@ -120,8 +120,18 @@ export const MachineAnalytics: React.FC = () => {
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredMachines.map((machine) => (
+              <MachineDetailCard
+                key={machine.machine_name}
+                machine={machine}
+                isExpanded={selectedMachine === machine.machine_name}
+                onToggle={() => setSelectedMachine(
+                  selectedMachine === machine.machine_name ? null : machine.machine_name
+                )}
+              />
+            ))}
+          </div>
       )}
     </div>
   );

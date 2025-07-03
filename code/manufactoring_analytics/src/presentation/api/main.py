@@ -68,7 +68,8 @@ async def lifespan(app: FastAPI):
         "src.presentation.api.routes.health",
         "src.presentation.api.routes.analytics", 
         "src.presentation.api.routes.export",
-        "src.presentation.api.routes.config"
+        "src.presentation.api.routes.config",
+        "src.presentation.api.routes.csv_export"
     ])
     
     # Initialize scheduler
