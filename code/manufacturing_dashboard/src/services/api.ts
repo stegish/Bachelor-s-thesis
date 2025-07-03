@@ -10,9 +10,20 @@ import {
   Anomaly
 } from '../types';
 
+// Helper to read env vars from runtime (window.env) or build time (process.env)
+const getEnvVar = (key: string, fallback: string): string => {
+  if (typeof window !== 'undefined' && (window as any).env && (window as any).env[key]) {
+    return (window as any).env[key];
+  }
+  if (process.env[key]) {
+    return process.env[key] as string;
+  }
+  return fallback;
+};
+
 // API URLs from environment variables
-const ANALYTICS_API_URL = process.env.REACT_APP_ANALYTICS_API || 'http://localhost:5000';
-const LLM_API_URL = process.env.REACT_APP_LLM_API || 'http://localhost:5001';
+const ANALYTICS_API_URL = getEnvVar('REACT_APP_ANALYTICS_API', 'http://localhost:5000');
+const LLM_API_URL = getEnvVar('REACT_APP_LLM_API', 'http://localhost:5001');
 
 // Create axios instances
 const analyticsApi: AxiosInstance = axios.create({
@@ -145,10 +156,45 @@ export const llmService = {
 
   // Analyze custom question
   analyze: async (question: string, includeContext: boolean = true): Promise<any> => {
-    const response = await llmApi.post('/api/v1/analyze', {
+    const response = await llmApi.post('/api/v1/analysis', {
       question,
       include_db_context: includeContext
     });
+    return response.data;
+  },
+
+  // Analyze uploaded CSV files
+  analyzeCsv: async (files: File[], question: string, includeContext: boolean = true): Promise<any> => {
+    const formData = new FormData();
+    formData.append('question', question);
+    formData.append('include_context', String(includeContext));
+    files.forEach(f => formData.append('files', f));
+    const response = await llmApi.post('/api/v1/analysis/csv', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
+  // Compare multiple CSV files
+  compareCsv: async (files: File[], question?: string): Promise<any> => {
+    const formData = new FormData();
+    if (question) formData.append('question', question);
+    files.forEach(f => formData.append('files', f));
+    const response = await llmApi.post('/api/v1/analysis/csv/compare', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
+  // Get improvement suggestions
+  getSuggestions: async (metrics: Record<string, any>): Promise<any> => {
+    const response = await llmApi.post('/api/v1/suggestions', { metrics });
+    return response.data;
+  },
+
+  // Execute MCP action
+  executeMcpAction: async (action: string, parameters: Record<string, any>): Promise<any> => {
+    const response = await llmApi.post('/api/v1/mcp/execute', { action, parameters });
     return response.data;
   }
 };
