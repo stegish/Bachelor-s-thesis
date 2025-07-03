@@ -226,29 +226,39 @@ class GenerateRecommendationUseCase:
         if 'machine_metrics' in csv_data:
             machine_data = csv_data['machine_metrics'].get('data', [])
             if machine_data:
-                metrics['avg_machine_utilization'] = sum(
-                    m.get('utilization_percentage', 0) for m in machine_data
-                ) / len(machine_data)
-                metrics['avg_machine_efficiency'] = sum(
-                    m.get('efficiency_percentage', 0) for m in machine_data
-                ) / len(machine_data)
+                # Calculate utilization with None handling
+                utilization_values = [m.get('utilization_percentage', 0) or 0 for m in machine_data]
+                if utilization_values:
+                    metrics['avg_machine_utilization'] = sum(utilization_values) / len(utilization_values)
+                
+                # Calculate efficiency with None handling
+                efficiency_values = [m.get('efficiency_percentage', 0) or 0 for m in machine_data]
+                if efficiency_values:
+                    metrics['avg_machine_efficiency'] = sum(efficiency_values) / len(efficiency_values)
         
         # Extract from order_timeline if available
         if 'order_timeline' in csv_data:
             order_data = csv_data['order_timeline'].get('data', [])
             if order_data:
                 completed = [o for o in order_data if o.get('order_status') == 4]
-                on_time = [o for o in completed if o.get('on_time')]
-                metrics['order_completion_rate'] = (len(completed) / len(order_data)) * 100
-                metrics['on_time_delivery_rate'] = (len(on_time) / len(completed)) * 100 if completed else 0
+                on_time = [o for o in completed if o.get('on_time') == True]
+                
+                if order_data:
+                    metrics['order_completion_rate'] = (len(completed) / len(order_data)) * 100
+                
+                if completed:
+                    metrics['on_time_delivery_rate'] = (len(on_time) / len(completed)) * 100
+                else:
+                    metrics['on_time_delivery_rate'] = 0
         
         # Extract from queue_analysis if available
         if 'queue_analysis' in csv_data:
             queue_data = csv_data['queue_analysis'].get('data', [])
             if queue_data:
-                metrics['avg_queue_delay_hours'] = sum(
-                    q.get('avg_queue_delay', 0) for q in queue_data
-                ) / len(queue_data)
+                # Handle None values in queue delays
+                queue_delays = [q.get('avg_queue_delay', 0) or 0 for q in queue_data]
+                if queue_delays:
+                    metrics['avg_queue_delay_hours'] = sum(queue_delays) / len(queue_delays)
         
         return metrics
     

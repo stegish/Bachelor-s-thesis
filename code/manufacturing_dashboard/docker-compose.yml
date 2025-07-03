@@ -1,32 +1,15 @@
 version: '3.8'
 
 services:
-  # MongoDB
-  mongodb:
-    image: mongo:7
-    container_name: manufacturing_mongodb
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-password123}
-      MONGO_INITDB_DATABASE: ${DATABASE_NAME:-manufacturing_db}
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
-    networks:
-      - manufacturing_network
-
   # Analytics API
   analytics_api:
     build: ../manufactoring_analytics
     container_name: manufacturing_analytics_api
     restart: unless-stopped
-    depends_on:
-      - mongodb
+    env_file:
+      - .env
     environment:
-      MONGO_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-password123}@mongodb:27017/${DATABASE_NAME:-manufacturing_db}?authSource=admin
+      MONGO_URI: ${MONGO_URI}
       DATABASE_NAME: ${DATABASE_NAME:-manufacturing_db}
       OUTPUT_DIR: /app/analytics_output
       SCHEDULE_INTERVAL_MINUTES: ${SCHEDULE_INTERVAL_MINUTES:-60}
@@ -43,12 +26,13 @@ services:
     container_name: manufacturing_llm
     restart: unless-stopped
     depends_on:
-      - mongodb
       - analytics_api
+    env_file:
+      - .env
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      MODEL_NAME: ${MODEL_NAME:-claude-3-sonnet-20240229}
-      MONGO_URI: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD:-password123}@mongodb:27017/${DATABASE_NAME:-manufacturing_db}?authSource=admin
+      MODEL_NAME: ${MODEL_NAME:-claude-3-5-sonnet-20241022}
+      MONGO_URI: ${MONGO_URI}
       DATABASE_NAME: ${DATABASE_NAME:-manufacturing_db}
       AI_MANAGER_DB_URI: ${AI_MANAGER_DB_URI}
       AI_MANAGER_DB_NAME: ${AI_MANAGER_DB_NAME:-AI-manager}
@@ -66,6 +50,8 @@ services:
     depends_on:
       - analytics_api
       - llm_service
+    env_file:
+      - .env
     environment:
       REACT_APP_ANALYTICS_API: ${REACT_APP_ANALYTICS_API:-http://localhost:5000}
       REACT_APP_LLM_API: ${REACT_APP_LLM_API:-http://localhost:5001}
@@ -94,7 +80,6 @@ services:
       - manufacturing_network
 
 volumes:
-  mongodb_data:
   analytics_output:
 
 networks:

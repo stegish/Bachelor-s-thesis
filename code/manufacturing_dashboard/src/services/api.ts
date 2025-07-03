@@ -264,13 +264,12 @@ export const llmService = {
   }
 };
 
-// Anomaly detection function
 export const detectAnomalies = (analyticsData: any): Anomaly[] => {
   const anomalies: Anomaly[] = [];
   
   // Check machine metrics for anomalies
-  if (analyticsData.machine_metrics) {
-    analyticsData.machine_metrics.forEach((machine: MachineMetrics) => {
+  if (analyticsData.machine_metrics && analyticsData.machine_metrics.data) {
+    analyticsData.machine_metrics.data.forEach((machine: MachineMetrics) => {
       // Low efficiency anomaly
       if (machine.efficiency_percentage && machine.efficiency_percentage < 70) {
         anomalies.push({
@@ -308,8 +307,8 @@ export const detectAnomalies = (analyticsData: any): Anomaly[] => {
   }
   
   // Check order timeline for delays
-  if (analyticsData.order_timeline) {
-    const delayedOrders = analyticsData.order_timeline.filter(
+  if (analyticsData.order_timeline && analyticsData.order_timeline.data) {
+    const delayedOrders = analyticsData.order_timeline.data.filter(
       (order: OrderTimeline) => order.delay_days && order.delay_days > 2
     );
     
@@ -333,8 +332,8 @@ export const detectAnomalies = (analyticsData: any): Anomaly[] => {
   }
   
   // Check for bottlenecks
-  if (analyticsData.queue_analysis) {
-    analyticsData.queue_analysis.forEach((queue: QueueAnalysis) => {
+  if (analyticsData.queue_analysis && analyticsData.queue_analysis.data) {
+    analyticsData.queue_analysis.data.forEach((queue: QueueAnalysis) => {
       if (queue.is_bottleneck) {
         anomalies.push({
           id: `anomaly-bottleneck-${queue.phase_name}`,

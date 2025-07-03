@@ -13,7 +13,10 @@ class AnthropicLLMService(ILLMService):
     """Anthropic implementation of LLM service"""
     
     def __init__(self, settings: Settings):
-        self.client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+        # Initialize the client without any httpx-specific parameters
+        self.client = AsyncAnthropic(
+            api_key=settings.anthropic_api_key,
+        )
         self.model = settings.model_name
         self.max_tokens = settings.max_tokens
         self.temperature = settings.temperature
@@ -26,12 +29,8 @@ class AnthropicLLMService(ILLMService):
         # Build context from request
         context = self._build_context(request)
         
-        # Create messages
+        # Create messages - updated format for newer API
         messages = [
-            {
-                "role": "system",
-                "content": self._get_system_prompt()
-            },
             {
                 "role": "user",
                 "content": f"{context}\n\nQuestion: {request.question}"
@@ -39,26 +38,46 @@ class AnthropicLLMService(ILLMService):
         ]
         
         try:
-            # Call Anthropic API
+            # Call Anthropic API with updated parameters
             response = await self.client.messages.create(
                 model=self.model,
                 max_tokens=self.max_tokens,
                 temperature=self.temperature,
-                messages=messages
+                messages=messages,
+                system=self._get_system_prompt()  # System prompt is now a separate parameter
             )
             
             processing_time = (datetime.now() - start_time).total_seconds()
             
+            # Extract text from response - format may have changed
+            answer_text = response.content[0].text if hasattr(response.content[0], 'text') else str(response.content[0])
+            
+            # Handle the new usage structure safely
+            token_count = None
+            if hasattr(response, 'usage'):
+                try:
+                    # New API structure has input_tokens and output_tokens
+                    if hasattr(response.usage, 'input_tokens') and hasattr(response.usage, 'output_tokens'):
+                        input_tokens = getattr(response.usage, 'input_tokens', 0) or 0
+                        output_tokens = getattr(response.usage, 'output_tokens', 0) or 0
+                        token_count = input_tokens + output_tokens
+                    # Fallback for other possible structures
+                    elif hasattr(response.usage, 'total_tokens'):
+                        token_count = getattr(response.usage, 'total_tokens', None)
+                except Exception as e:
+                    logger.warning(f"Could not extract token count: {str(e)}")
+                    token_count = None
+            
             return AnalysisResult(
                 question=request.question,
-                answer=response.content[0].text,
+                answer=answer_text,
                 model_used=self.model,
                 context_included=request.include_db_context,
                 session_id=request.session_id,
                 timestamp=datetime.now(),
                 data_provided=bool(request.context_data),
                 files_processed=request.files and [f.filename for f in request.files],
-                token_count=response.usage.total_tokens if hasattr(response, 'usage') else None,
+                token_count=token_count,
                 processing_time=processing_time
             )
         except Exception as e:
@@ -74,21 +93,22 @@ class AnthropicLLMService(ILLMService):
         # Add user message to history
         self.chat_sessions[session_id].append({"role": "user", "content": message})
         
-        # Build messages including history
-        messages = [
-            {"role": "system", "content": self._get_system_prompt()}
-        ] + self.chat_sessions[session_id]
+        # Build messages - don't include system message in the messages array
+        messages = self.chat_sessions[session_id]
         
         try:
             response = await self.client.messages.create(
                 model=self.model,
                 max_tokens=self.max_tokens,
                 temperature=self.temperature,
-                messages=messages
+                messages=messages,
+                system=self._get_system_prompt()  # System prompt as separate parameter
             )
             
+            # Extract text from response
+            assistant_response = response.content[0].text if hasattr(response.content[0], 'text') else str(response.content[0])
+            
             # Add assistant response to history
-            assistant_response = response.content[0].text
             self.chat_sessions[session_id].append({
                 "role": "assistant",
                 "content": assistant_response
