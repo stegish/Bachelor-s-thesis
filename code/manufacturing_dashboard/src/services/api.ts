@@ -21,6 +21,26 @@ const getEnvVar = (key: string, fallback: string): string => {
   return fallback;
 };
 
+const adaptSummaryData = (data: any): AnalyticsSummary => {
+  // Adatta i dati dal backend che potrebbero avere nomi diversi
+  return {
+    total_orders: data.total_orders || 0,
+    completed_orders: data.completed_orders || 0,
+    active_machines: data.active_machines || 0,
+    total_machines: data.total_machines || 0,
+    // Mappa avg_lead_time -> avg_order_lead_time
+    avg_lead_time: data.avg_lead_time || data.avg_order_lead_time || 0,
+    // Mappa on_time_rate -> on_time_delivery_rate
+    on_time_rate: data.on_time_rate || data.on_time_delivery_rate || 0,
+    // Mappa avg_utilization -> avg_machine_utilization
+    avg_utilization: data.avg_utilization || data.avg_machine_utilization || 0,
+    // Mappa avg_efficiency -> avg_machine_efficiency
+    avg_efficiency: data.avg_efficiency || data.avg_machine_efficiency || 0,
+    bottleneck_machines: data.bottleneck_machines || [],
+    total_operators: data.total_operators || 0
+  };
+};
+
 // API URLs from environment variables
 const ANALYTICS_API_URL = getEnvVar('REACT_APP_ANALYTICS_API', 'http://localhost:5000');
 const LLM_API_URL = getEnvVar('REACT_APP_LLM_API', 'http://localhost:5001');
@@ -56,15 +76,60 @@ const llmApi: AxiosInstance = axios.create({
   );
 });
 
+const extractSummaryFromCSV = (csvData: any): AnalyticsSummary => {
+  const machines = csvData.machine_metrics?.data || [];
+  const orders = csvData.order_timeline?.data || [];
+  const operators = csvData.operator_performance?.data || [];
+  
+  const activeMachines = machines.filter((m: any) => m.is_active).length;
+  const completedOrders = orders.filter((o: any) => o.order_status === 4).length;
+  const onTimeOrders = orders.filter((o: any) => o.on_time === true).length;
+  
+  // Calcola metriche aggregate con controlli per evitare divisione per zero
+  const avgEfficiency = machines.length > 0 
+    ? machines.reduce((sum: number, m: any) => sum + (m.efficiency_percentage || 0), 0) / machines.length 
+    : 0;
+  
+  const avgUtilization = machines.length > 0
+    ? machines.reduce((sum: number, m: any) => sum + (m.utilization_percentage || 0), 0) / machines.length
+    : 0;
+  
+  const avgLeadTime = orders.length > 0
+    ? orders.reduce((sum: number, o: any) => sum + (o.lead_time_days || 0), 0) / orders.length
+    : 0;
+  
+  const onTimeRate = orders.length > 0 ? (onTimeOrders / orders.length) * 100 : 0;
+  
+  // Trova i colli di bottiglia
+  const bottlenecks = csvData.queue_analysis?.data
+    ?.filter((q: any) => q.is_bottleneck)
+    ?.map((q: any) => q.phase_name) || [];
+  
+  // Conta operatori unici
+  const uniqueOperators = new Set(operators.map((o: any) => o.operator)).size;
+  
+  return {
+    total_orders: orders.length,
+    completed_orders: completedOrders,
+    active_machines: activeMachines,
+    total_machines: machines.length,
+    avg_lead_time: avgLeadTime,
+    on_time_rate: onTimeRate,
+    avg_utilization: avgUtilization,
+    avg_efficiency: avgEfficiency,
+    bottleneck_machines: bottlenecks,
+    total_operators: uniqueOperators
+  };
+};
+
 // Analytics API Services
 export const analyticsService = {
   // Get analytics summary
   getSummary: async (): Promise<AnalyticsSummary> => {
-    const response = await analyticsApi.get('/api/v1/analytics/summary');
-    return response.data;
+    const csvResponse = await analyticsApi.get('/api/v1/csv/download-all-json');
+    return extractSummaryFromCSV(csvResponse.data);
   },
 
-  // Get all CSV data as JSON
   getAllData: async () => {
     const response = await analyticsApi.get('/api/v1/csv/download-all-json');
     return response.data;

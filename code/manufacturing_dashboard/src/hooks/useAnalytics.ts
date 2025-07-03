@@ -59,15 +59,26 @@ export const useRunAnalytics = () => {
   });
 };
 
-// Recommendation hooks
 export const useLatestRecommendation = () => {
   return useQuery({
     queryKey: QUERY_KEYS.recommendations.latest,
-    queryFn: llmService.getLatestRecommendation,
+    queryFn: async () => {
+      try {
+        return await llmService.getLatestRecommendation();
+      } catch (error: any) {
+        // Se è un 404, restituisci null invece di lanciare l'errore
+        if (error?.response?.status === 404) {
+          console.log('No recommendations found yet - this is normal for new installations');
+          return null;
+        }
+        // Per altri errori, rilancia
+        throw error;
+      }
+    },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     retry: (failureCount, error: any) => {
-      // Don't retry on 404 (no recommendations found)
+      // Non fare retry su 404
       if (error?.response?.status === 404) return false;
       return failureCount < 3;
     },

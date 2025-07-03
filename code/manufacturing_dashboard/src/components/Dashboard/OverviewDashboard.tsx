@@ -17,7 +17,6 @@ import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ErrorMessage } from '../common/ErrorMessage';
 import { formatNumber, formatPercentage } from '../../utils';
 
-
 export const OverviewDashboard: React.FC = () => {
   const { summary, analyticsData, anomalies, isLoading, isError, error, refetch } = useDashboardData();
 
