@@ -21,6 +21,7 @@ import {
   useExecuteMcpAction
 } from '../../hooks/useAnalytics';
 import { formatDistanceToNow } from 'date-fns';
+import { ActionConfirmationModal } from './ActionConfirmationModal';
 
 const getPriorityColor = (priority: string) => {
   switch (priority) {
@@ -52,6 +53,7 @@ const getTypeIcon = (type: string) => {
 export const RecommendationsView: React.FC = () => {
   const [customPrompt, setCustomPrompt] = useState('');
   const [showCustomPrompt, setShowCustomPrompt] = useState(false);
+  const [selectedAction, setSelectedAction] = useState<any | null>(null);
 
   const { data: recommendation, isLoading, isError, error } = useLatestRecommendation();
   const generateMutation = useGenerateRecommendation();
@@ -63,8 +65,12 @@ export const RecommendationsView: React.FC = () => {
     setShowCustomPrompt(false);
   };
 
-  const handleExecuteAction = (action: string, params: Record<string, any>) => {
-    executeMutation.mutate({ action, parameters: params });
+  const handleConfirmAction = () => {
+    if (!selectedAction) return;
+    executeMutation.mutate(
+      { action: selectedAction.action, parameters: selectedAction.parameters || {} },
+      { onSettled: () => setSelectedAction(null) }
+    );
   };
 
   if (isLoading) {
@@ -82,6 +88,7 @@ export const RecommendationsView: React.FC = () => {
   }
 
   return (
+    <>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -236,6 +243,11 @@ export const RecommendationsView: React.FC = () => {
                             Expected Impact: {action.estimated_impact}
                           </p>
                         )}
+                        {action.parameters && (
+                          <pre className="text-xs bg-gray-100 rounded p-2 mt-2 overflow-x-auto">
+{JSON.stringify(action.parameters, null, 2)}
+                          </pre>
+                        )}
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <span
@@ -251,9 +263,9 @@ export const RecommendationsView: React.FC = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleExecuteAction(action.action!, action.parameters || {})}
+                            onClick={() => setSelectedAction(action)}
                           >
-                            Execute
+                            Review
                           </Button>
                         )}
                       </div>
@@ -333,5 +345,14 @@ export const RecommendationsView: React.FC = () => {
       )}
 
     </div>
+    {selectedAction && (
+      <ActionConfirmationModal
+        action={selectedAction}
+        onConfirm={handleConfirmAction}
+        onClose={() => setSelectedAction(null)}
+        loading={executeMutation.isPending}
+      />
+    )}
+    </>
   );
 };
