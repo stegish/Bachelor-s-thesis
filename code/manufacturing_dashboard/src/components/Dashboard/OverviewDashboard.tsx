@@ -28,7 +28,7 @@ export const OverviewDashboard: React.FC = () => {
     return (
       <ErrorMessage 
         title="Failed to load dashboard"
-        message={error?.message || 'An error occurred while loading the dashboard data.'}
+        message={(error as any)?.message || 'An error occurred while loading the dashboard data.'}
         onRetry={refetch}
       />
     );
