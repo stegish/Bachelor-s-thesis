@@ -1,5 +1,6 @@
 import uuid
 import httpx
+import json
 from datetime import datetime
 from typing import Dict, Any, List
 import logging
@@ -199,24 +200,59 @@ class GenerateRecommendationUseCase:
         return anomalies
     
     def _extract_priority_actions(self, analysis: str) -> List[Dict[str, Any]]:
-        """Extract priority actions from analysis"""
-        actions = []
-        lines = analysis.split('\n')
-        
-        priority_keywords = ['immediate', 'urgent', 'critical', 'priority', 'asap', 'now']
+        """Extract priority actions from analysis.
+
+        The LLM is expected to mention lines containing actions to run via the MCP
+        server using a format like::
+
+            <description>. Action: <command> Parameters: {"key": "value"}
+
+        Any line flagged as urgent/critical will be parsed and returned with the
+        optional command and parameters for direct execution.
+        """
+
+        actions: List[Dict[str, Any]] = []
+        lines = analysis.split("\n")
+
+        priority_keywords = ["immediate", "urgent", "critical", "priority", "asap", "now"]
         action_count = 0
-        
+
         for line in lines:
-            if any(keyword in line.lower() for keyword in priority_keywords):
+            line_lower = line.lower()
+            if any(keyword in line_lower for keyword in priority_keywords):
                 action_count += 1
+                action_cmd = None
+                params = None
+
+                if "action:" in line_lower:
+                    try:
+                        after_action = line.split("action:", 1)[1]
+                        if "parameters:" in after_action.lower():
+                            action_part, param_part = after_action.split("parameters:", 1)
+                        elif "params:" in after_action.lower():
+                            action_part, param_part = after_action.split("params:", 1)
+                        else:
+                            action_part, param_part = after_action, ""
+
+                        action_cmd = action_part.strip().strip(" ,")
+                        param_part = param_part.strip().strip(" ,")
+                        if param_part.startswith("{") and param_part.endswith("}"):
+                            params = json.loads(param_part)
+                    except Exception:
+                        # If parsing fails just ignore command details
+                        action_cmd = None
+                        params = None
+
                 actions.append({
-                    'id': f'ACTION-{action_count:03d}',
-                    'description': line.strip(),
-                    'urgency': 'critical' if any(k in line.lower() for k in ['immediate', 'critical']) else 'high',
-                    'estimated_impact': 'high'
+                    "id": f"ACTION-{action_count:03d}",
+                    "description": line.strip(),
+                    "urgency": "critical" if any(k in line_lower for k in ["immediate", "critical"]) else "high",
+                    "estimated_impact": "high",
+                    "action": action_cmd,
+                    "parameters": params,
                 })
-        
-        return actions[:5]  # Top 5 priority actions
+
+        return actions[:5]
     
     def _extract_key_metrics(self, csv_data: Dict[str, Any]) -> Dict[str, float]:
         """Extract key metrics from CSV data"""
