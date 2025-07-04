@@ -24,7 +24,7 @@ class Container(containers.DeclarativeContainer):
 
     recommendation_repository = providers.Singleton(
         MongoRecommendationRepository,
-        connection_string=settings.provided.get_ai_manager_uri,
+        connection_string=settings.provided.ai_manager_db_uri,
         database_name=settings.provided.ai_manager_db_name
     )
     
