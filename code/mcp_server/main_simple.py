@@ -63,6 +63,17 @@ class CountDocumentsRequest(BaseModel):
     collection: str
     filter: Optional[Dict[str, Any]] = {}
 
+class ScheduleOrderRequest(BaseModel):
+    order: Dict[str, Any]
+
+class AddMachineStaffRequest(BaseModel):
+    machine_id: str
+    staff: List[str]
+
+class RescheduleOrdersRequest(BaseModel):
+    machine_id: str
+    schedule: Dict[str, Any]
+
 # API Endpoints
 @app.get("/health")
 async def health_check():
@@ -105,6 +116,22 @@ async def list_tools():
             {
                 "name": "get_production_status",
                 "description": "Get current production status overview"
+            },
+            {
+                "name": "schedule_order",
+                "description": "Insert a new order into the production plan"
+            },
+            {
+                "name": "add_machine_staff",
+                "description": "Assign additional operators to a machine"
+            },
+            {
+                "name": "reschedule_machine_orders",
+                "description": "Reschedule all orders for a machine"
+            },
+            {
+                "name": "get_working_hours",
+                "description": "Return company working hours information"
             }
         ]
     }
@@ -196,6 +223,46 @@ async def get_production_status():
         return {"success": True, "status": result.data}
     else:
         raise HTTPException(status_code=400, detail=result.error)
+
+
+@app.post("/tools/schedule_order")
+async def schedule_order(request: ScheduleOrderRequest):
+    """Insert a new production order"""
+    try:
+        order_id = await mongo_repo.insert_order(request.order)
+        return {"success": True, "order_id": order_id}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/tools/add_machine_staff")
+async def add_machine_staff(request: AddMachineStaffRequest):
+    """Assign additional staff to a machine"""
+    try:
+        modified = await mongo_repo.add_machine_staff(request.machine_id, request.staff)
+        return {"success": True, "modified": modified}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/tools/reschedule_machine_orders")
+async def reschedule_machine_orders(request: RescheduleOrdersRequest):
+    """Reschedule orders for a machine"""
+    try:
+        modified = await mongo_repo.reschedule_machine_orders(request.machine_id, request.schedule)
+        return {"success": True, "modified": modified}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/tools/get_working_hours")
+async def get_working_hours():
+    """Return company working hours"""
+    try:
+        data = await mongo_repo.get_working_hours()
+        return {"success": True, "data": data}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

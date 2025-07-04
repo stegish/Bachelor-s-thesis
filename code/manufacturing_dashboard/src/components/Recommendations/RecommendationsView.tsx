@@ -15,7 +15,11 @@ import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ErrorMessage } from '../common/ErrorMessage';
-import { useLatestRecommendation, useGenerateRecommendation } from '../../hooks/useAnalytics';
+import {
+  useLatestRecommendation,
+  useGenerateRecommendation,
+  useExecuteMcpAction
+} from '../../hooks/useAnalytics';
 import { formatDistanceToNow } from 'date-fns';
 
 const getPriorityColor = (priority: string) => {
@@ -48,9 +52,10 @@ const getTypeIcon = (type: string) => {
 export const RecommendationsView: React.FC = () => {
   const [customPrompt, setCustomPrompt] = useState('');
   const [showCustomPrompt, setShowCustomPrompt] = useState(false);
-  
+
   const { data: recommendation, isLoading, isError, error } = useLatestRecommendation();
   const generateMutation = useGenerateRecommendation();
+  const executeMutation = useExecuteMcpAction();
 
   const handleGenerateNew = (prompt?: string) => {
     generateMutation.mutate(prompt);
@@ -58,15 +63,19 @@ export const RecommendationsView: React.FC = () => {
     setShowCustomPrompt(false);
   };
 
+  const handleExecuteAction = (action: string, params: Record<string, any>) => {
+    executeMutation.mutate({ action, parameters: params });
+  };
+
   if (isLoading) {
     return <LoadingSpinner text="Loading recommendations..." />;
   }
 
-  if (isError && error?.response?.status !== 404) {
+  if (isError && (error as any)?.response?.status !== 404) {
     return (
-      <ErrorMessage 
+      <ErrorMessage
         title="Failed to load recommendations"
-        message={error?.message || 'An error occurred while loading recommendations.'}
+        message={(error as any)?.message || 'An error occurred while loading recommendations.'}
         onRetry={() => window.location.reload()}
       />
     );
@@ -228,11 +237,26 @@ export const RecommendationsView: React.FC = () => {
                           </p>
                         )}
                       </div>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        action.urgency === 'critical' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'
-                      }`}>
-                        {action.urgency}
-                      </span>
+                      <div className="flex flex-col items-end gap-2">
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            action.urgency === 'critical'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-orange-100 text-orange-800'
+                          }`}
+                        >
+                          {action.urgency}
+                        </span>
+                        {action.action && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleExecuteAction(action.action!, action.parameters || {})}
+                          >
+                            Execute
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -307,6 +331,7 @@ export const RecommendationsView: React.FC = () => {
           </div>
         </Card>
       )}
+
     </div>
   );
 };

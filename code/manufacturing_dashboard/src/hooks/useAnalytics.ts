@@ -20,30 +20,36 @@ const QUERY_KEYS = {
 
 // Analytics hooks
 export const useAnalyticsSummary = () => {
-  return useQuery({
-    queryKey: QUERY_KEYS.analytics.summary,
-    queryFn: analyticsService.getSummary,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-  });
+  return useQuery(
+    QUERY_KEYS.analytics.summary,
+    analyticsService.getSummary,
+    {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000,
+    }
+  );
 };
 
 export const useAnalyticsData = () => {
-  return useQuery({
-    queryKey: QUERY_KEYS.analytics.allData,
-    queryFn: analyticsService.getAllData,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-  });
+  return useQuery(
+    QUERY_KEYS.analytics.allData,
+    analyticsService.getAllData,
+    {
+      staleTime: 5 * 60 * 1000,
+      cacheTime: 10 * 60 * 1000,
+    }
+  );
 };
 
 export const useAnalyticsStatus = () => {
-  return useQuery({
-    queryKey: QUERY_KEYS.analytics.status,
-    queryFn: analyticsService.getStatus,
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 30 * 1000, // Poll every 30 seconds
-  });
+  return useQuery(
+    QUERY_KEYS.analytics.status,
+    analyticsService.getStatus,
+    {
+      staleTime: 30 * 1000, // 30 seconds
+      refetchInterval: 30 * 1000, // Poll every 30 seconds
+    }
+  );
 };
 
 export const useRunAnalytics = () => {
@@ -60,9 +66,9 @@ export const useRunAnalytics = () => {
 };
 
 export const useLatestRecommendation = () => {
-  return useQuery({
-    queryKey: QUERY_KEYS.recommendations.latest,
-    queryFn: async () => {
+  return useQuery(
+    QUERY_KEYS.recommendations.latest,
+    async () => {
       try {
         return await llmService.getLatestRecommendation();
       } catch (error: any) {
@@ -75,23 +81,27 @@ export const useLatestRecommendation = () => {
         throw error;
       }
     },
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    retry: (failureCount, error: any) => {
-      // Non fare retry su 404
-      if (error?.response?.status === 404) return false;
-      return failureCount < 3;
-    },
-  });
+    {
+      staleTime: 5 * 60 * 1000,
+      cacheTime: 10 * 60 * 1000,
+      retry: (failureCount, error: any) => {
+        // Non fare retry su 404
+        if (error?.response?.status === 404) return false;
+        return failureCount < 3;
+      },
+    }
+  );
 };
 
 export const useRecommendationHistory = (days: number = 7) => {
-  return useQuery({
-    queryKey: QUERY_KEYS.recommendations.history(days),
-    queryFn: () => llmService.getRecommendationHistory(days),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-  });
+  return useQuery(
+    QUERY_KEYS.recommendations.history(days),
+    () => llmService.getRecommendationHistory(days),
+    {
+      staleTime: 5 * 60 * 1000,
+      cacheTime: 10 * 60 * 1000,
+    }
+  );
 };
 
 export const useGenerateRecommendation = () => {
@@ -113,16 +123,18 @@ export const useGenerateRecommendation = () => {
 // Anomalies hook
 export const useAnomalies = () => {
   const { data: analyticsData } = useAnalyticsData();
-  
-  return useQuery({
-    queryKey: QUERY_KEYS.anomalies,
-    queryFn: () => {
+
+  return useQuery(
+    QUERY_KEYS.anomalies,
+    () => {
       if (!analyticsData) return [];
       return detectAnomalies(analyticsData);
     },
-    enabled: !!analyticsData,
-    staleTime: 1 * 60 * 1000, // 1 minute
-  });
+    {
+      enabled: !!analyticsData,
+      staleTime: 1 * 60 * 1000, // 1 minute
+    }
+  );
 };
 
 // Combined dashboard data hook
@@ -154,4 +166,11 @@ export const useDashboardData = () => {
       status.refetch();
     },
   };
+};
+
+export const useExecuteMcpAction = () => {
+  return useMutation({
+    mutationFn: (payload: { action: string; parameters: Record<string, any> }) =>
+      llmService.executeMcpAction(payload.action, payload.parameters),
+  });
 };
