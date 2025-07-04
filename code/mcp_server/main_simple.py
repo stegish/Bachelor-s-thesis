@@ -74,6 +74,27 @@ class RescheduleOrdersRequest(BaseModel):
     machine_id: str
     schedule: Dict[str, Any]
 
+class UpdateOrderRequest(BaseModel):
+    order_id: str
+    updates: Dict[str, Any]
+
+class UpdatePhaseRequest(BaseModel):
+    order_id: str
+    phase_id: str
+    updates: Dict[str, Any]
+
+class AddOrderNoteRequest(BaseModel):
+    order_id: str
+    note: Dict[str, Any]
+
+class UpdateMachineRequest(BaseModel):
+    machine_id: str
+    updates: Dict[str, Any]
+
+class UpdateShiftRequest(BaseModel):
+    shift_id: str
+    updates: Dict[str, Any]
+
 # API Endpoints
 @app.get("/health")
 async def health_check():
@@ -132,6 +153,26 @@ async def list_tools():
             {
                 "name": "get_working_hours",
                 "description": "Return company working hours information"
+            },
+            {
+                "name": "update_order",
+                "description": "Update fields of an order"
+            },
+            {
+                "name": "update_phase",
+                "description": "Update fields of a phase inside an order"
+            },
+            {
+                "name": "add_order_note",
+                "description": "Append a note to an order"
+            },
+            {
+                "name": "update_machine",
+                "description": "Modify machine settings like queueTargetTime or activation"
+            },
+            {
+                "name": "update_shift",
+                "description": "Modify or add overtime to a shift"
             }
         ]
     }
@@ -261,6 +302,56 @@ async def get_working_hours():
     try:
         data = await mongo_repo.get_working_hours()
         return {"success": True, "data": data}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/tools/update_order")
+async def update_order(request: UpdateOrderRequest):
+    """Update fields of an order"""
+    try:
+        modified = await mongo_repo.update_order_fields(request.order_id, request.updates)
+        return {"success": True, "modified": modified}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/tools/update_phase")
+async def update_phase(request: UpdatePhaseRequest):
+    """Update a specific phase inside an order"""
+    try:
+        modified = await mongo_repo.update_phase_fields(request.order_id, request.phase_id, request.updates)
+        return {"success": True, "modified": modified}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/tools/add_order_note")
+async def add_order_note(request: AddOrderNoteRequest):
+    """Append a note to an order"""
+    try:
+        modified = await mongo_repo.add_order_note(request.order_id, request.note)
+        return {"success": True, "modified": modified}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/tools/update_machine")
+async def update_machine(request: UpdateMachineRequest):
+    """Update machine settings"""
+    try:
+        modified = await mongo_repo.update_machine(request.machine_id, request.updates)
+        return {"success": True, "modified": modified}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/tools/update_shift")
+async def update_shift(request: UpdateShiftRequest):
+    """Update shift information or overtime"""
+    try:
+        modified = await mongo_repo.update_shift(request.shift_id, request.updates)
+        return {"success": True, "modified": modified}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

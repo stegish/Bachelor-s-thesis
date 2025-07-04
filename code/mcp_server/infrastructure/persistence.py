@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional
 from motor.motor_asyncio import AsyncIOMotorClient
+from bson import ObjectId
 
 class MongoDBRepository:
     """Simple MongoDB repository used by the MCP server."""
@@ -32,7 +33,7 @@ class MongoDBRepository:
 
     async def add_machine_staff(self, machine_id: str, staff: List[str]) -> int:
         update = {"$addToSet": {"operators": {"$each": staff}}}
-        result = await self.db["macchinari"].update_one({"_id": machine_id}, update)
+        result = await self.db["macchinari"].update_one({"_id": ObjectId(machine_id)}, update)
         return result.modified_count
 
     async def reschedule_machine_orders(self, machine_id: str, schedule: Dict[str, Any]) -> int:
@@ -43,3 +44,32 @@ class MongoDBRepository:
         settings = await self.company_db["settings"].find_one({})
         shifts = await self.company_db["turni"].find().to_list(length=None)
         return {"settings": settings, "turni": shifts}
+
+    async def update_order_fields(self, order_id: str, updates: Dict[str, Any]) -> int:
+        """Update top-level fields of an order"""
+        result = await self.db["newOrdini"].update_one({"orderId": order_id}, {"$set": updates})
+        return result.modified_count
+
+    async def update_phase_fields(self, order_id: str, phase_id: str, updates: Dict[str, Any]) -> int:
+        """Update fields within a specific phase of an order"""
+        set_updates = {f"Phases.$.{k}": v for k, v in updates.items()}
+        result = await self.db["newOrdini"].update_one(
+            {"orderId": order_id, "Phases.phaseId": phase_id},
+            {"$set": set_updates}
+        )
+        return result.modified_count
+
+    async def add_order_note(self, order_id: str, note: Dict[str, Any]) -> int:
+        """Append a note to an order"""
+        result = await self.db["newOrdini"].update_one({"orderId": order_id}, {"$push": {"notes": note}})
+        return result.modified_count
+
+    async def update_machine(self, machine_id: str, updates: Dict[str, Any]) -> int:
+        """Update machine settings"""
+        result = await self.db["macchinari"].update_one({"_id": ObjectId(machine_id)}, {"$set": updates})
+        return result.modified_count
+
+    async def update_shift(self, shift_id: str, updates: Dict[str, Any]) -> int:
+        """Update a shift document in the company DB"""
+        result = await self.company_db["turni"].update_one({"_id": ObjectId(shift_id)}, {"$set": updates})
+        return result.modified_count
