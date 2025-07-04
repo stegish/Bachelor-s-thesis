@@ -122,29 +122,47 @@ class GenerateRecommendationUseCase:
         Your analysis should include:
         
         1. **Current Production Status**
-           - Overall efficiency and utilization rates
-           - Order completion rates and delays
-           - Current bottlenecks and constraints
+        - Overall efficiency and utilization rates
+        - Order completion rates and delays
+        - Current bottlenecks and constraints
         
         2. **Anomaly Detection**
-           - Identify any unusual patterns or deviations
-           - Flag machines with abnormal performance
-           - Highlight unexpected delays or inefficiencies
+        - Identify any unusual patterns or deviations
+        - Flag machines with abnormal performance
+        - Highlight unexpected delays or inefficiencies
         
         3. **Critical Issues**
-           - List top 5 most critical issues requiring immediate attention
-           - Explain the impact of each issue
-           - Provide risk assessment
+        - List top 5 most critical issues requiring immediate attention
+        - Explain the impact of each issue
+        - Provide risk assessment
         
         4. **Recommendations**
-           - Provide 5-7 specific, actionable recommendations
-           - Prioritize by impact and urgency
-           - Include expected outcomes for each recommendation
+        - Provide 5-7 specific, actionable recommendations
+        - Prioritize by impact and urgency
+        - Include expected outcomes for each recommendation
         
-        5. **Predictive Insights**
-           - Predict potential issues in the next 24-48 hours
-           - Suggest preventive measures
-           - Identify trends that need monitoring
+        5. **Priority Actions for MCP Execution**
+       IMPORTANT: For any URGENT or CRITICAL issues that require immediate action, you MUST format them EXACTLY as follows:
+       - Start the line with one of these keywords: URGENT, CRITICAL, IMMEDIATE, PRIORITY, or ASAP
+       - Use this EXACT format: <description>. Action: <mcp_command> Parameters: {"param1": "value1", "param2": "value2"}
+       - The Parameters MUST be valid JSON
+       
+       Available MCP commands:
+       - schedule_order: Schedule a production order. Parameters: {"order": {"id": "ORDER_ID", "priority": "high", "dueDate": "YYYY-MM-DD", "machine": "MACHINE_ID", "quantity": NUMBER}}
+       - add_machine_staff: Add staff to a machine. Parameters: {"machine_id": "MACHINE_ID", "staff": ["OPERATOR_ID1", "OPERATOR_ID2"]}
+       - reschedule_orders: Reschedule machine orders. Parameters: {"machine_id": "MACHINE_ID", "schedule": {"priority": "high", "redistribute": true}}
+       
+       MANDATORY EXAMPLES (follow this format exactly):
+       - URGENT: Machine M001 is critically overloaded and needs immediate load balancing. Action: reschedule_orders Parameters: {"machine_id": "M001", "schedule": {"priority": "high", "redistribute": true}}
+       - CRITICAL: Severe staff shortage detected on machine M002 affecting production. Action: add_machine_staff Parameters: {"machine_id": "M002", "staff": ["OP123", "OP124"]}
+       - IMMEDIATE: Order O789 is at risk of missing deadline and must be expedited. Action: schedule_order Parameters: {"order": {"id": "O789", "priority": "high", "dueDate": "2025-07-05", "machine": "M003", "quantity": 100}}
+       
+       YOU MUST INCLUDE AT LEAST ONE ACTION IN THIS FORMAT IF THERE ARE CRITICAL ISSUES!
+        
+        6. **Predictive Insights**
+        - Predict potential issues in the next 24-48 hours
+        - Suggest preventive measures
+        - Identify trends that need monitoring
         
         Format your response with clear sections and bullet points for easy reading.
         Use specific numbers and percentages where available.
@@ -200,59 +218,57 @@ class GenerateRecommendationUseCase:
         return anomalies
     
     def _extract_priority_actions(self, analysis: str) -> List[Dict[str, Any]]:
-        """Extract priority actions from analysis.
-
-        The LLM is expected to mention lines containing actions to run via the MCP
-        server using a format like::
-
-            <description>. Action: <command> Parameters: {"key": "value"}
-
-        Any line flagged as urgent/critical will be parsed and returned with the
-        optional command and parameters for direct execution.
-        """
-
+        """Extract priority actions from analysis."""
+        import json
+        import re
+        
         actions: List[Dict[str, Any]] = []
         lines = analysis.split("\n")
-
+        
         priority_keywords = ["immediate", "urgent", "critical", "priority", "asap", "now"]
         action_count = 0
-
+        
         for line in lines:
             line_lower = line.lower()
+            
+            # Check if line contains priority keyword
             if any(keyword in line_lower for keyword in priority_keywords):
                 action_count += 1
-                action_cmd = None
-                params = None
-
-                if "action:" in line_lower:
-                    try:
-                        after_action = line.split("action:", 1)[1]
-                        if "parameters:" in after_action.lower():
-                            action_part, param_part = after_action.split("parameters:", 1)
-                        elif "params:" in after_action.lower():
-                            action_part, param_part = after_action.split("params:", 1)
-                        else:
-                            action_part, param_part = after_action, ""
-
-                        action_cmd = action_part.strip().strip(" ,")
-                        param_part = param_part.strip().strip(" ,")
-                        if param_part.startswith("{") and param_part.endswith("}"):
-                            params = json.loads(param_part)
-                    except Exception:
-                        # If parsing fails just ignore command details
-                        action_cmd = None
-                        params = None
-
-                actions.append({
+                
+                # Base action dictionary
+                action_dict = {
                     "id": f"ACTION-{action_count:03d}",
                     "description": line.strip(),
-                    "urgency": "critical" if any(k in line_lower for k in ["immediate", "critical"]) else "high",
-                    "estimated_impact": "high",
-                    "action": action_cmd,
-                    "parameters": params,
-                })
-
-        return actions[:5]
+                    "urgency": "critical" if "critical" in line_lower else "high"
+                }
+                
+                # Try to extract Action and Parameters using regex
+                # Pattern: Action: <command> Parameters: <json>
+                action_match = re.search(r'Action:\s*([^\s]+)\s*Parameters:\s*(\{[^}]+\})', line, re.IGNORECASE)
+                
+                if action_match:
+                    try:
+                        command = action_match.group(1).strip()
+                        params_str = action_match.group(2).strip()
+                        
+                        # Parse JSON parameters
+                        parameters = json.loads(params_str)
+                        
+                        # Add to action dict
+                        action_dict["action"] = command
+                        action_dict["parameters"] = parameters
+                        
+                        logger.info(f"Successfully parsed action: {command} with params: {parameters}")
+                        
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Failed to parse JSON parameters: {params_str} - Error: {e}")
+                    except Exception as e:
+                        logger.error(f"Error parsing action from line: {e}")
+                
+                actions.append(action_dict)
+                logger.info(f"Added priority action: {action_dict}")
+        
+        return actions
     
     def _extract_key_metrics(self, csv_data: Dict[str, Any]) -> Dict[str, float]:
         """Extract key metrics from CSV data"""

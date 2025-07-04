@@ -243,29 +243,37 @@ export const RecommendationsView: React.FC = () => {
                             Expected Impact: {action.estimated_impact}
                           </p>
                         )}
-                        {action.parameters && (
-                          <pre className="text-xs bg-gray-100 rounded p-2 mt-2 overflow-x-auto">
-{JSON.stringify(action.parameters, null, 2)}
-                          </pre>
+                        {/* Mostra action e parameters se presenti */}
+                        {action.action && (
+                          <div className="mt-2 p-2 bg-gray-100 rounded">
+                            <p className="text-xs font-mono">
+                              <span className="font-semibold">Command:</span> {action.action}
+                            </p>
+                            {action.parameters && (
+                              <pre className="text-xs mt-1 overflow-x-auto">
+                                <span className="font-semibold">Parameters:</span> {JSON.stringify(action.parameters, null, 2)}
+                              </pre>
+                            )}
+                          </div>
                         )}
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <span
                           className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            action.urgency === 'critical'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-orange-100 text-orange-800'
+                            action.urgency === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
                           }`}
                         >
-                          {action.urgency}
+                          {action.urgency || 'high'}
                         </span>
-                        {action.action && (
+                        {/* IMPORTANTE: Mostra il bottone Execute solo se ci sono action e parameters */}
+                        {action.action && action.parameters && (
                           <Button
-                            variant="outline"
                             size="sm"
+                            variant="outline"
                             onClick={() => setSelectedAction(action)}
+                            className="mt-2"
                           >
-                            Review
+                            Execute
                           </Button>
                         )}
                       </div>
