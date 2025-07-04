@@ -142,10 +142,11 @@ class GenerateRecommendationUseCase:
         - Include expected outcomes for each recommendation
         
         5. **Priority Actions for MCP Execution**
+       Always propose one or more MCP actions that could address the issues you identified. These actions will be shown to a user for approval, so clearly describe what each action will modify (e.g. which order field or machine setting).
        IMPORTANT: For any URGENT or CRITICAL issues that require immediate action, you MUST format them EXACTLY as follows:
        - Start the line with one of these keywords: URGENT, CRITICAL, IMMEDIATE, PRIORITY, or ASAP
        - Use this EXACT format: <description>. Action: <mcp_command> Parameters: {"param1": "value1", "param2": "value2"}
-       - The Parameters MUST be valid JSON
+       - The Parameters MUST be valid JSON and reflect the exact updates that will occur
        
        Available MCP commands:
        - schedule_order: Insert a new order document. Parameters: {"order": {"orderId": "ID", "codiceArticolo": "CODE", "priority": NUMBER, "quantity": NUMBER, ...}}
