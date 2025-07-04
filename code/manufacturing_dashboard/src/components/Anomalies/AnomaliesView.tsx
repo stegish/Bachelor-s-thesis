@@ -74,7 +74,7 @@ export const AnomaliesView: React.FC = () => {
     return (
       <ErrorMessage 
         title="Failed to load anomalies"
-        message={error?.message || 'An error occurred while loading anomalies.'}
+        message={(error as any)?.message || 'An error occurred while loading anomalies.'}
         onRetry={refetch}
       />
     );

@@ -115,6 +115,8 @@ export interface Recommendation {
     description: string;
     urgency: 'high' | 'critical';
     estimated_impact: string;
+    action?: string;
+    parameters?: Record<string, any>;
   }>;
   metrics_analyzed: {
     avg_machine_utilization?: number;
