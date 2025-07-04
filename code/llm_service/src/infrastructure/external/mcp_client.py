@@ -12,23 +12,53 @@ class MCPClient(IMCPService):
         self.mcp_server_url = mcp_server_url
     
     async def execute_action(self, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute MCP action"""
+        """Execute MCP action by mapping to the correct endpoint"""
         async with aiohttp.ClientSession() as session:
             try:
+                # Map action names to MCP server endpoints
+                endpoint_map = {
+                    'schedule_order': '/tools/schedule_order',
+                    'add_machine_staff': '/tools/add_machine_staff',
+                    'reschedule_orders': '/tools/reschedule_machine_orders',
+                    'update_machine_status': '/tools/update_machine_status',
+                    'allocate_resources': '/tools/allocate_resources',
+                    'query_database': '/tools/query_database',
+                    'read_csv': '/tools/read_csv_file',
+                    'get_production_status': '/tools/get_production_status'
+                }
+                
+                endpoint = endpoint_map.get(action)
+                if not endpoint:
+                    logger.error(f"Unknown MCP action: {action}")
+                    return {"error": f"Unknown action: {action}"}
+                
+                # Make the request to the MCP server
                 async with session.post(
-                    f"{self.mcp_server_url}/execute",
-                    json={"action": action, "parameters": parameters}
+                    f"{self.mcp_server_url}{endpoint}",
+                    json=parameters,
+                    timeout=aiohttp.ClientTimeout(total=30)
                 ) as response:
-                    return await response.json()
+                    result = await response.json()
+                    
+                    if response.status != 200:
+                        logger.error(f"MCP server returned error: {result}")
+                        return {"error": result.get("detail", "Unknown error")}
+                    
+                    return result
+                    
+            except aiohttp.ClientError as e:
+                logger.error(f"Network error executing MCP action: {str(e)}")
+                return {"error": f"Network error: {str(e)}"}
             except Exception as e:
                 logger.error(f"Error executing MCP action: {str(e)}")
                 return {"error": str(e)}
     
     async def query_mongodb(self, collection: str, query: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Query MongoDB through MCP"""
-        result = await self.execute_action("mongodb_query", {
+        result = await self.execute_action("query_database", {
             "collection": collection,
-            "query": query
+            "filter": query,
+            "limit": 100
         })
         return result.get("data", [])
     
@@ -38,6 +68,7 @@ class MCPClient(IMCPService):
     
     async def write_csv(self, filename: str, data: Dict[str, Any]) -> bool:
         """Write CSV through MCP"""
+        # This endpoint might not exist in the current MCP server
         result = await self.execute_action("write_csv", {
             "filename": filename,
             "data": data
