@@ -21,6 +21,7 @@ class MCPClient(IMCPService):
                     'add_machine_staff': '/tools/add_machine_staff',
                     'reschedule_orders': '/tools/reschedule_machine_orders',
                     'update_order': '/tools/update_order',
+                    'update_order_priority': '/tools/update_order',
                     'update_phase': '/tools/update_phase',
                     'add_order_note': '/tools/add_order_note',
                     'update_machine': '/tools/update_machine',
@@ -34,7 +35,17 @@ class MCPClient(IMCPService):
                 if not endpoint:
                     logger.error(f"Unknown MCP action: {action}")
                     return {"error": f"Unknown action: {action}"}
-                
+
+                # Parameter adaptation for backward-compatible commands
+                if action == 'update_order_priority':
+                    # allow simpler payloads like {"order_id": "ID", "priority": 1}
+                    priority = parameters.get('priority')
+                    if priority is not None:
+                        parameters = {
+                            'order_id': parameters.get('order_id'),
+                            'updates': {'priority': priority}
+                        }
+
                 # Make the request to the MCP server
                 async with session.post(
                     f"{self.mcp_server_url}{endpoint}",

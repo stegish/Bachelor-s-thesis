@@ -153,6 +153,7 @@ class GenerateRecommendationUseCase:
        - add_machine_staff: Add staff to a machine. Parameters: {"machine_id": "MACHINE_ID", "staff": ["OPERATOR_ID1", "OPERATOR_ID2"]}
        - reschedule_orders: Reschedule machine orders. Parameters: {"machine_id": "MACHINE_ID", "schedule": {"priority": "high", "redistribute": true}}
        - update_order: Update fields of an order. Parameters: {"order_id": "ORDER_ID", "updates": {"priority": 1}}
+       - update_order_priority: Alias for update_order to modify just the priority field. Parameters: {"order_id": "ORDER_ID", "priority": 1}
        - update_phase: Update a phase inside an order. Parameters: {"order_id": "ORDER_ID", "phase_id": "PHASE_ID", "updates": {"finishDate": "YYYY-MM-DD"}}
        - add_order_note: Append a note to an order. Parameters: {"order_id": "ORDER_ID", "note": {"type": "operatore", "note": "text"}}
        - update_machine: Modify machine settings like queueTargetTime or activation. Parameters: {"machine_id": "MACHINE_ID", "updates": {"queueTargetTime": 12345}}
