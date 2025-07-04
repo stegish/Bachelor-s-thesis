@@ -20,8 +20,11 @@ class MCPClient(IMCPService):
                     'schedule_order': '/tools/schedule_order',
                     'add_machine_staff': '/tools/add_machine_staff',
                     'reschedule_orders': '/tools/reschedule_machine_orders',
-                    'update_machine_status': '/tools/update_machine_status',
-                    'allocate_resources': '/tools/allocate_resources',
+                    'update_order': '/tools/update_order',
+                    'update_phase': '/tools/update_phase',
+                    'add_order_note': '/tools/add_order_note',
+                    'update_machine': '/tools/update_machine',
+                    'update_shift': '/tools/update_shift',
                     'query_database': '/tools/query_database',
                     'read_csv': '/tools/read_csv_file',
                     'get_production_status': '/tools/get_production_status'

@@ -148,14 +148,19 @@ class GenerateRecommendationUseCase:
        - The Parameters MUST be valid JSON
        
        Available MCP commands:
-       - schedule_order: Schedule a production order. Parameters: {"order": {"id": "ORDER_ID", "priority": "high", "dueDate": "YYYY-MM-DD", "machine": "MACHINE_ID", "quantity": NUMBER}}
+       - schedule_order: Insert a new order document. Parameters: {"order": {"orderId": "ID", "codiceArticolo": "CODE", "priority": NUMBER, "quantity": NUMBER, ...}}
        - add_machine_staff: Add staff to a machine. Parameters: {"machine_id": "MACHINE_ID", "staff": ["OPERATOR_ID1", "OPERATOR_ID2"]}
        - reschedule_orders: Reschedule machine orders. Parameters: {"machine_id": "MACHINE_ID", "schedule": {"priority": "high", "redistribute": true}}
+       - update_order: Update fields of an order. Parameters: {"order_id": "ORDER_ID", "updates": {"priority": 1}}
+       - update_phase: Update a phase inside an order. Parameters: {"order_id": "ORDER_ID", "phase_id": "PHASE_ID", "updates": {"finishDate": "YYYY-MM-DD"}}
+       - add_order_note: Append a note to an order. Parameters: {"order_id": "ORDER_ID", "note": {"type": "operatore", "note": "text"}}
+       - update_machine: Modify machine settings like queueTargetTime or activation. Parameters: {"machine_id": "MACHINE_ID", "updates": {"queueTargetTime": 12345}}
+       - update_shift: Modify shift or overtime info. Parameters: {"shift_id": "SHIFT_ID", "updates": {"overtimeHours": 2}}
        
        MANDATORY EXAMPLES (follow this format exactly):
        - URGENT: Machine M001 is critically overloaded and needs immediate load balancing. Action: reschedule_orders Parameters: {"machine_id": "M001", "schedule": {"priority": "high", "redistribute": true}}
        - CRITICAL: Severe staff shortage detected on machine M002 affecting production. Action: add_machine_staff Parameters: {"machine_id": "M002", "staff": ["OP123", "OP124"]}
-       - IMMEDIATE: Order O789 is at risk of missing deadline and must be expedited. Action: schedule_order Parameters: {"order": {"id": "O789", "priority": "high", "dueDate": "2025-07-05", "machine": "M003", "quantity": 100}}
+       - IMMEDIATE: Order O789 is at risk of missing deadline and must be expedited. Action: schedule_order Parameters: {"order": {"orderId": "O789", "priority": 1, "dueDate": "2025-07-05", "machine": "M003", "quantity": 100}}
        
        YOU MUST INCLUDE AT LEAST ONE ACTION IN THIS FORMAT IF THERE ARE CRITICAL ISSUES!
         
