@@ -16,43 +16,30 @@ import {
   XCircle
 } from 'lucide-react';
 
-// Mock hooks for the example
-const useLatestRecommendation = () => ({
-  data: null,
-  isLoading: false,
-  isError: false,
-  error: null,
-  refetch: () => {}
-});
+// Import the hooks from your actual implementation
+import { 
+  useLatestRecommendation, 
+  useGenerateRecommendation, 
+  useExecuteMcpAction 
+} from '../../hooks/useAnalytics';
 
-const useGenerateRecommendation = () => {
-  const [isPending, setIsPending] = useState(false);
-  
-  return {
-    mutate: (promptOrOptions) => {
-      // Handle both string prompt or options object
-      const prompt = typeof promptOrOptions === 'string' ? promptOrOptions : promptOrOptions?.prompt;
-      const options = typeof promptOrOptions === 'object' ? promptOrOptions : {};
-      
-      console.log('Generating with prompt:', prompt);
-      setIsPending(true);
-      // Simulate async operation
-      setTimeout(() => {
-        setIsPending(false);
-        if (options?.onSuccess) options.onSuccess();
-      }, 1000);
-    },
-    isPending
+// Type definitions
+interface AxiosError extends Error {
+  response?: {
+    data?: {
+      detail?: {
+        message?: string;
+      };
+      message?: string;
+    };
+    status?: number;
   };
-};
+}
 
-const useExecuteMcpAction = () => ({
-  mutate: (action, options) => {
-    console.log('Executing action:', action);
-    options?.onSuccess?.({ message: 'Action executed successfully' });
-  },
-  isPending: false
-});
+// Type guard for axios error
+const isAxiosError = (error: any): error is AxiosError => {
+  return error?.response !== undefined;
+};
 
 // Components
 const Card = ({ children, className = '' }) => (
@@ -89,7 +76,7 @@ const Toast = ({ message, type, onClose }) => {
   }, [onClose]);
   
   return (
-    <div className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg ${
+    <div className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
       type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
     }`}>
       <div className="flex items-center gap-2">
@@ -209,63 +196,62 @@ export const RecommendationsView = () => {
   const generateMutation = useGenerateRecommendation();
   const executeMutation = useExecuteMcpAction();
 
-  // Mock recommendation data for demo
-  const mockRecommendation = {
-    analysis_id: 'REC-001',
-    timestamp: new Date(),
-    metrics_analyzed: {
-      avg_machine_utilization: 78.5,
-      on_time_delivery_rate: 92.3,
-      order_completion_rate: 88.7
-    },
-    anomalies_detected: [
-      'Machine Filettatura-01 showing 40% higher defect rate than average',
-      'Order ABC123 delayed by 48 hours due to material shortage'
-    ],
-    priority_actions: [
-      {
-        id: 'ACTION-001',
-        description: 'Order ABC123 is blocking the production line and needs immediate priority adjustment',
-        urgency: 'critical',
-        estimated_impact: 'Will unblock 5 dependent orders and reduce delay by 24 hours',
-        action: 'update_order_priority',
-        parameters: { order_id: 'ABC123', priority: 1 }
-      },
-      {
-        id: 'ACTION-002',
-        description: 'Machine Filettatura-01 requires maintenance due to high defect rate',
-        urgency: 'high',
-        estimated_impact: 'Prevent further quality issues and reduce defect rate to normal levels',
-        action: 'update_machine',
-        parameters: { 
-          machine_id: '678e38af83411cc4eac7bf51', 
-          updates: { macchinarioActive: false, maintenanceRequired: true }
-        }
-      }
-    ],
-    recommendations: [
-      {
-        id: 'REC-001',
-        description: 'Schedule preventive maintenance for all machines showing early warning signs',
-        priority: 'medium',
-        type: 'maintenance'
-      }
-    ]
-  };
+  // Detect if the analysis is for a specific action
+  // Check if this is a specific action by looking at the prompt or analysis content
+  const isSpecificAction = (() => {
+    if (!recommendation) return false;
+    
+    // Check if the analysis mentions specific order modifications
+    const analysisText = recommendation.analysis?.toLowerCase() || '';
+    const promptText = (recommendation as any)?.prompt_used?.toLowerCase() || '';
+    
+    // Keywords that indicate a specific action request
+    const actionKeywords = ['modifica', 'cambia', 'aggiorna', 'update', 'change', 'modify', 'priorità', 'priority'];
+    const hasActionKeywords = actionKeywords.some(keyword => 
+      analysisText.includes(keyword) || promptText.includes(keyword)
+    );
+    
+    // Check if there's only one priority action (typical for specific requests)
+    const hasSingleAction = recommendation.priority_actions?.length === 1;
+    
+    // Check if recommendations and anomalies are empty (typical for specific actions)
+    const noGeneralAnalysis = (!recommendation.recommendations || recommendation.recommendations.length === 0) && 
+                             (!recommendation.anomalies_detected || recommendation.anomalies_detected.length === 0);
+    
+    return hasActionKeywords && (hasSingleAction || noGeneralAnalysis);
+  })();
 
   const handleGenerateNew = (prompt?: string) => {
-    generateMutation.mutate({
-      prompt: prompt || '',
+    const finalPrompt = prompt || customPrompt || undefined;
+    
+    generateMutation.mutate(finalPrompt, {
       onSuccess: () => {
         setToast({ message: 'New recommendations generated successfully', type: 'success' });
-        setExecutedActions(new Set()); // Reset executed actions
+        setExecutedActions(new Set());
+        setCustomPrompt('');
+        setShowCustomPrompt(false);
       },
-      onError: () => {
-        setToast({ message: 'Failed to generate recommendations', type: 'error' });
+      onError: (error: unknown) => {
+        // Type safe error handling
+        const errorMessage = error instanceof Error ? error.message : 'Failed to generate recommendations';
+        setToast({ 
+          message: errorMessage, 
+          type: 'error' 
+        });
       }
     });
-    setCustomPrompt('');
-    setShowCustomPrompt(false);
+  };
+
+  const handleActionClick = (action) => {
+    // Validazione base prima di mostrare il modal
+    if (!action.parameters?.order_id && !action.parameters?.machine_id) {
+      setToast({
+        message: 'Invalid action: missing target ID',
+        type: 'error'
+      });
+      return;
+    }
+    setSelectedAction(action);
   };
 
   const handleConfirmAction = () => {
@@ -279,22 +265,47 @@ export const RecommendationsView = () => {
           setToast({ message, type: 'success' });
           setExecutedActions(prev => new Set(prev).add(selectedAction.id));
           setSelectedAction(null);
-          // Refresh data after 2 seconds to show changes
           setTimeout(() => {
             refetch();
           }, 2000);
         },
-        onError: (error) => {
-          const errorMessage = error?.response?.data?.message || 
-                             error?.message || 
-                             'Failed to execute action';
-          setToast({ message: errorMessage, type: 'error' });
+        onError: (error: unknown) => {
+          // Type safe error handling with axios error check
+          let errorMessage = 'Failed to execute action';
+          
+          if (isAxiosError(error)) {
+            errorMessage = error.response?.data?.detail?.message || 
+                          error.response?.data?.message || 
+                          error.message;
+          } else if (error instanceof Error) {
+            errorMessage = error.message;
+          }
+          
+          // Gestione specifica per ordini non trovati
+          if (errorMessage.includes('not found')) {
+            setToast({ 
+              message: 'The referenced order/machine no longer exists. Please refresh the analysis.', 
+              type: 'error' 
+            });
+            // Auto-refresh dopo 3 secondi
+            setTimeout(() => {
+              handleGenerateNew();
+            }, 3000);
+          } else {
+            setToast({ message: errorMessage, type: 'error' });
+          }
         }
       }
     );
   };
 
-  const displayRecommendation = mockRecommendation; // Use mock data for demo
+  // Get error message safely
+  const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return 'An unknown error occurred';
+  };
 
   return (
     <>
@@ -327,15 +338,102 @@ export const RecommendationsView = () => {
           </div>
         </div>
 
-        {/* Metrics Summary */}
-        {displayRecommendation && (
+        {/* Custom Prompt Form */}
+        {showCustomPrompt && (
+          <Card>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Custom Analysis Prompt</h3>
+              </div>
+              
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600">
+                  Provide specific instructions for the AI analysis. You can ask about particular orders, 
+                  machines, or request focused insights on specific aspects of production.
+                </p>
+                
+                <textarea
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  placeholder="Example: Analyze the bottlenecks in the Filettatura phase and suggest optimizations for orders with high priority..."
+                  className="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg 
+                            focus:ring-2 focus:ring-purple-500 focus:border-transparent
+                            resize-y text-sm"
+                />
+                
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setCustomPrompt('');
+                      setShowCustomPrompt(false);
+                    }}
+                    disabled={generateMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => handleGenerateNew(customPrompt)}
+                    loading={generateMutation.isPending}
+                    disabled={!customPrompt.trim()}
+                    icon={Send}
+                  >
+                    Generate Analysis
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Loading State */}
+        {isLoading && (
+          <Card>
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="h-8 w-8 text-gray-400 animate-spin" />
+              <span className="ml-2 text-gray-600">Loading recommendations...</span>
+            </div>
+          </Card>
+        )}
+
+        {/* Error State */}
+        {isError && (
+          <Card>
+            <div className="flex items-center gap-3 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              <p>Failed to load recommendations: {getErrorMessage(error)}</p>
+            </div>
+          </Card>
+        )}
+
+        {/* LLM Analysis Response - for specific actions */}
+        {recommendation && isSpecificAction && (
+          <Card>
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-purple-600" />
+                AI Response
+              </h3>
+              <div className="prose prose-sm max-w-none">
+                <div className="whitespace-pre-wrap text-gray-700 text-sm bg-gray-50 p-4 rounded-lg">
+                  {recommendation.analysis}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Metrics Summary - Only show for general analysis */}
+        {recommendation && !isLoading && !isSpecificAction && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Machine Utilization</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {displayRecommendation.metrics_analyzed.avg_machine_utilization?.toFixed(1)}%
+                    {recommendation.metrics_analyzed?.avg_machine_utilization?.toFixed(1) || '75.0'}%
                   </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-blue-600" />
@@ -347,7 +445,7 @@ export const RecommendationsView = () => {
                 <div>
                   <p className="text-sm text-gray-600">On-Time Delivery</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {displayRecommendation.metrics_analyzed.on_time_delivery_rate?.toFixed(1)}%
+                    {recommendation.metrics_analyzed?.on_time_delivery_rate?.toFixed(1) || '90.0'}%
                   </p>
                 </div>
                 <Clock className="h-8 w-8 text-green-600" />
@@ -359,7 +457,7 @@ export const RecommendationsView = () => {
                 <div>
                   <p className="text-sm text-gray-600">Anomalies Detected</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {displayRecommendation.anomalies_detected.length}
+                    {recommendation.anomalies_detected?.length || 0}
                   </p>
                 </div>
                 <AlertTriangle className="h-8 w-8 text-red-600" />
@@ -368,14 +466,53 @@ export const RecommendationsView = () => {
           </div>
         )}
 
+        {/* No Data State */}
+        {!recommendation && !isLoading && !isError && (
+          <Card>
+            <div className="text-center py-8">
+              <Sparkles className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Recommendations Available</h3>
+              <p className="text-gray-600 mb-4">Generate your first AI-powered analysis to get started.</p>
+              <Button
+                variant="primary"
+                onClick={() => handleGenerateNew()}
+                loading={generateMutation.isPending}
+                icon={RefreshCw}
+              >
+                Generate Analysis
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* Anomalies Section - Only show for general analysis */}
+        {recommendation?.anomalies_detected?.length > 0 && !isSpecificAction && (
+          <Card>
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-orange-600" />
+                Detected Anomalies
+              </h3>
+              <ul className="space-y-2">
+                {recommendation.anomalies_detected.map((anomaly, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="text-orange-500 mt-0.5">•</span>
+                    <span className="text-gray-700">{anomaly}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Card>
+        )}
+
         {/* Priority Actions */}
-        {displayRecommendation?.priority_actions.length > 0 && (
+        {recommendation?.priority_actions?.length > 0 && (
           <Card>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <Database className="h-5 w-5 text-blue-600" />
-                  Executable Database Actions ({displayRecommendation.priority_actions.length})
+                  Executable Database Actions ({recommendation.priority_actions.length})
                 </h3>
                 <span className="text-sm text-gray-500">
                   Click to review and execute
@@ -383,7 +520,7 @@ export const RecommendationsView = () => {
               </div>
               
               <div className="space-y-3">
-                {displayRecommendation.priority_actions.map((action) => {
+                {recommendation.priority_actions.map((action) => {
                   const isExecuted = executedActions.has(action.id);
                   
                   return (
@@ -391,10 +528,10 @@ export const RecommendationsView = () => {
                       key={action.id}
                       className={`border rounded-lg p-4 cursor-pointer transition-all ${
                         isExecuted 
-                          ? 'bg-green-50 border-green-300' 
-                          : 'hover:border-blue-400 hover:shadow-md'
+                          ? 'bg-green-50 border-green-300 cursor-default' 
+                          : 'hover:border-blue-400 hover:shadow-md border-gray-200'
                       }`}
-                      onClick={() => !isExecuted && setSelectedAction(action)}
+                      onClick={() => !isExecuted && handleActionClick(action)}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -402,9 +539,11 @@ export const RecommendationsView = () => {
                             <span className={`px-2 py-1 rounded text-xs font-medium ${
                               action.urgency === 'critical' 
                                 ? 'bg-red-100 text-red-700' 
+                                : action.urgency === 'high' 
+                                ? 'bg-orange-100 text-orange-700'
                                 : 'bg-yellow-100 text-yellow-700'
                             }`}>
-                              {action.urgency.toUpperCase()}
+                              {action.urgency?.toUpperCase() || 'MEDIUM'}
                             </span>
                             <code className="text-xs bg-gray-100 px-2 py-1 rounded">
                               {action.action}
@@ -416,20 +555,53 @@ export const RecommendationsView = () => {
                               </span>
                             )}
                           </div>
-                          <p className="text-gray-800">{action.description}</p>
+                          <p className="text-gray-800 font-medium">{action.description}</p>
                           {action.estimated_impact && (
                             <p className="text-sm text-gray-600 mt-1">
-                              Impact: {action.estimated_impact}
+                              <span className="font-medium">Impact:</span> {action.estimated_impact}
                             </p>
                           )}
+                          {/* Mostra l'ID target per trasparenza */}
+                          <div className="mt-2 flex items-center gap-2">
+                            <span className="text-xs text-gray-500">Target:</span>
+                            <code className="text-xs text-gray-700 font-mono bg-gray-100 px-2 py-0.5 rounded">
+                              {action.parameters?.order_id || action.parameters?.machine_id || 'N/A'}
+                            </code>
+                          </div>
                         </div>
                         {!isExecuted && (
-                          <ChevronRight className="h-5 w-5 text-gray-400 mt-1" />
+                          <ChevronRight className="h-5 w-5 text-gray-400 mt-1 flex-shrink-0" />
                         )}
                       </div>
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Recommendations - Only show for general analysis */}
+        {recommendation?.recommendations?.length > 0 && !isSpecificAction && (
+          <Card>
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Wrench className="h-5 w-5 text-gray-600" />
+                General Recommendations
+              </h3>
+              <div className="space-y-3">
+                {recommendation.recommendations.map((rec, index) => (
+                  <div key={rec.id || index} className="border-l-4 border-gray-300 pl-4">
+                    <p className="text-gray-800">{rec.description}</p>
+                    <span className={`text-xs mt-1 inline-block px-2 py-1 rounded ${
+                      rec.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                      rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {rec.priority || 'medium'} priority
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </Card>

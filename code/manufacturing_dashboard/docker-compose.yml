@@ -20,6 +20,24 @@ services:
     networks:
       - manufacturing_network
 
+  # MCP Server - NUOVO SERVIZIO
+  mcp_server:
+    build: ../mcp_server
+    container_name: manufacturing_mcp
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MONGO_URI: ${MONGO_URI}
+      DATABASE_NAME: ${DATABASE_NAME:-manufacturing_db}
+      AI_MANAGER_DB_URI: ${AI_MANAGER_DB_URI}
+      AI_MANAGER_DB_NAME: ${AI_MANAGER_DB_NAME:-AI-manager}
+      PORT: 5002
+    ports:
+      - "5002:5002"
+    networks:
+      - manufacturing_network
+
   # LLM Service
   llm_service:
     build: ../llm_service
@@ -27,6 +45,7 @@ services:
     restart: unless-stopped
     depends_on:
       - analytics_api
+      - mcp_server  # Aggiungi dipendenza dal MCP server
     env_file:
       - .env
     environment:
@@ -37,6 +56,7 @@ services:
       AI_MANAGER_DB_URI: ${AI_MANAGER_DB_URI}
       AI_MANAGER_DB_NAME: ${AI_MANAGER_DB_NAME:-AI-manager}
       ANALYTICS_SERVICE_URL: http://analytics_api:5000
+      MCP_SERVER_URL: http://mcp_server:5002  # Aggiungi URL del MCP server
     ports:
       - "5001:5001"
     networks:
@@ -70,6 +90,7 @@ services:
       - frontend
       - analytics_api
       - llm_service
+      - mcp_server
     ports:
       - "80:80"
       - "443:443"

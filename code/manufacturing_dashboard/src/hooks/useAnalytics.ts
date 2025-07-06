@@ -152,8 +152,92 @@ export const useDashboardData = () => {
 };
 
 export const useExecuteMcpAction = () => {
+  const queryClient = useQueryClient();
+  
   return useMutation({
-    mutationFn: (payload: { action: string; parameters: Record<string, any> }) =>
-      llmService.executeMcpAction(payload.action, payload.parameters),
+    mutationFn: async (payload: { action: string; parameters: Record<string, any> }) => {
+      try {
+        const response = await llmService.executeMcpAction(payload.action, payload.parameters);
+        return response;
+      } catch (error: any) {
+        // Gestione specifica per errori di validazione
+        if (error.response?.status === 404) {
+          const errorDetail = error.response.data.detail;
+          
+          // Se l'errore contiene suggerimenti di ID validi
+          if (errorDetail.available_order_ids_sample) {
+            throw new Error(
+              `Order "${errorDetail.error}". ` +
+              `Available orders: ${errorDetail.available_order_ids_sample.join(', ')}. ` +
+              `Please refresh the analysis to get current data.`
+            );
+          }
+          
+          throw new Error(errorDetail.message || errorDetail.error || 'Resource not found');
+        }
+        
+        // Altri errori
+        throw new Error(
+          error.response?.data?.message || 
+          error.message || 
+          'Failed to execute action'
+        );
+      }
+    },
+    onError: (error: Error) => {
+      // Log dell'errore per debugging
+      console.error('MCP Action Error:', error);
+    },
+    onSuccess: () => {
+      // Invalida le query correlate per forzare il refresh dei dati
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+    }
+  });
+};
+
+export const useValidateAction = () => {
+  return useMutation({
+    mutationFn: async (action: { action: string; parameters: Record<string, any> }) => {
+      // Estrai gli ID dall'azione
+      const orderIds = [];
+      const machineIds = [];
+      
+      if (action.parameters.order_id) {
+        orderIds.push(action.parameters.order_id);
+      }
+      if (action.parameters.machine_id) {
+        machineIds.push(action.parameters.machine_id);
+      }
+      
+      // Chiama l'endpoint di validazione
+      const response = await fetch(`${process.env.REACT_APP_MCP_API}/tools/validate_ids`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_ids: orderIds,
+          machine_ids: machineIds
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Validation failed');
+      }
+      
+      const result = await response.json();
+      
+      if (!result.all_valid) {
+        const invalidItems = Object.entries(result.validation_results)
+          .filter(([_, valid]) => !valid)
+          .map(([key, _]) => key);
+        
+        throw new Error(
+          `Invalid IDs found: ${invalidItems.join(', ')}. ` +
+          'Please refresh the analysis to get current data.'
+        );
+      }
+      
+      return result;
+    }
   });
 };

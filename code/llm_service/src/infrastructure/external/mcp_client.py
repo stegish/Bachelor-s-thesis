@@ -1,90 +1,75 @@
-import aiohttp
-from typing import Dict, Any, List
-from ...domain.interfaces import IMCPService
+import httpx
 import logging
+from typing import Dict, Any
+from ...domain.interfaces import IMCPClient
 
 logger = logging.getLogger(__name__)
 
-class MCPClient(IMCPService):
-    """MCP client implementation"""
+class MCPClient(IMCPClient):
+    """Client for MCP Server communication"""
     
     def __init__(self, mcp_server_url: str):
-        self.mcp_server_url = mcp_server_url
+        self.base_url = mcp_server_url
+        self.timeout = httpx.Timeout(30.0, connect=10.0)
+        logger.info(f"MCP Client initialized with URL: {self.base_url}")
     
-    async def execute_action(self, action: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute MCP action by mapping to the correct endpoint"""
-        async with aiohttp.ClientSession() as session:
-            try:
-                # Map action names to MCP server endpoints
-                endpoint_map = {
-                    'schedule_order': '/tools/schedule_order',
-                    'add_machine_staff': '/tools/add_machine_staff',
-                    'reschedule_orders': '/tools/reschedule_machine_orders',
-                    'update_order': '/tools/update_order',
-                    'update_order_priority': '/tools/update_order',
-                    'update_phase': '/tools/update_phase',
-                    'add_order_note': '/tools/add_order_note',
-                    'update_machine': '/tools/update_machine',
-                    'update_shift': '/tools/update_shift',
-                    'query_database': '/tools/query_database',
-                    'read_csv': '/tools/read_csv_file',
-                    'get_production_status': '/tools/get_production_status'
-                }
+    async def execute_action(self, action_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute an action through MCP"""
+        try:
+            # Log the attempt
+            logger.info(f"Attempting to execute MCP action: {action_name} with parameters: {parameters}")
+            
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                # Determine the correct endpoint based on action
+                endpoint = self._get_endpoint_for_action(action_name)
                 
-                endpoint = endpoint_map.get(action)
-                if not endpoint:
-                    logger.error(f"Unknown MCP action: {action}")
-                    return {"error": f"Unknown action: {action}"}
-
-                # Parameter adaptation for backward-compatible commands
-                if action == 'update_order_priority':
-                    # allow simpler payloads like {"order_id": "ID", "priority": 1}
-                    priority = parameters.get('priority')
-                    if priority is not None:
-                        parameters = {
-                            'order_id': parameters.get('order_id'),
-                            'updates': {'priority': priority}
-                        }
-
-                # Make the request to the MCP server
-                async with session.post(
-                    f"{self.mcp_server_url}{endpoint}",
-                    json=parameters,
-                    timeout=aiohttp.ClientTimeout(total=30)
-                ) as response:
-                    result = await response.json()
-                    
-                    if response.status != 200:
-                        logger.error(f"MCP server returned error: {result}")
-                        return {"error": result.get("detail", "Unknown error")}
-                    
-                    return result
-                    
-            except aiohttp.ClientError as e:
-                logger.error(f"Network error executing MCP action: {str(e)}")
-                return {"error": f"Network error: {str(e)}"}
-            except Exception as e:
-                logger.error(f"Error executing MCP action: {str(e)}")
-                return {"error": str(e)}
+                response = await client.post(
+                    f"{self.base_url}{endpoint}",
+                    json=parameters
+                )
+                
+                # Check response status
+                if response.status_code >= 400:
+                    error_detail = response.json() if response.content else {"detail": "Unknown error"}
+                    logger.error(f"MCP server returned error {response.status_code}: {error_detail}")
+                    return {
+                        "success": False,
+                        "error": f"MCP server error: {error_detail.get('detail', 'Unknown error')}"
+                    }
+                
+                response.raise_for_status()
+                result = response.json()
+                
+                logger.info(f"MCP action {action_name} executed successfully")
+                return result
+                
+        except httpx.ConnectError as e:
+            logger.error(f"Cannot connect to MCP server at {self.base_url}: {str(e)}")
+            return {
+                "success": False,
+                "error": f"Cannot connect to MCP server. Please ensure it's running at {self.base_url}"
+            }
+        except httpx.TimeoutException as e:
+            logger.error(f"Timeout executing MCP action {action_name}: {str(e)}")
+            return {
+                "success": False,
+                "error": "Request timeout - MCP server took too long to respond"
+            }
+        except Exception as e:
+            logger.error(f"Unexpected error executing MCP action {action_name}: {str(e)}")
+            return {
+                "success": False,
+                "error": f"Unexpected error: {str(e)}"
+            }
     
-    async def query_mongodb(self, collection: str, query: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Query MongoDB through MCP"""
-        result = await self.execute_action("query_database", {
-            "collection": collection,
-            "filter": query,
-            "limit": 100
-        })
-        return result.get("data", [])
-    
-    async def read_csv(self, filename: str) -> Dict[str, Any]:
-        """Read CSV through MCP"""
-        return await self.execute_action("read_csv", {"filename": filename})
-    
-    async def write_csv(self, filename: str, data: Dict[str, Any]) -> bool:
-        """Write CSV through MCP"""
-        # This endpoint might not exist in the current MCP server
-        result = await self.execute_action("write_csv", {
-            "filename": filename,
-            "data": data
-        })
-        return result.get("success", False)
+    def _get_endpoint_for_action(self, action_name: str) -> str:
+        """Map action names to MCP endpoints"""
+        endpoints = {
+            'update_order': '/tools/update_order',
+            'update_order_priority': '/tools/update_order_priority',
+            'update_machine': '/tools/update_machine',
+            'add_order_note': '/tools/add_order_note',
+            'reschedule_orders': '/tools/reschedule_orders',
+            'add_machine_staff': '/tools/add_machine_staff'
+        }
+        return endpoints.get(action_name, f'/tools/{action_name}')
