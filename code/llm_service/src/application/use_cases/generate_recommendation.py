@@ -139,16 +139,16 @@ class GenerateRecommendationUseCase:
             return {}
     
     def _get_default_analysis_prompt(self) -> str:
-        """Get default comprehensive analysis prompt"""
+        """Get default comprehensive analysis prompt with real ID usage"""
         return """
         CONTEXT: You are analyzing manufacturing data and have the ability to propose executable actions through the Manufacturing Control Platform (MCP). These actions can directly modify the production database to fix issues.
+        
+        ⚠️ CRITICAL: You MUST use REAL IDs from the data provided. DO NOT use example IDs like "ABC123" or "XYZ456".
         
         Your proposed actions will be:
         1. Shown to the user for approval
         2. Executed automatically upon approval
         3. Applied directly to the MongoDB database
-        
-        DO NOT say "I cannot modify the database" - you CAN propose modifications through MCP actions!
         
         Perform a comprehensive analysis of the current manufacturing state using all available data.
         
@@ -156,14 +156,17 @@ class GenerateRecommendationUseCase:
         - Overall efficiency and utilization rates
         - Order completion rates and delays
         - Current bottlenecks and constraints
+        - IDENTIFY REAL ORDER IDs that are causing delays
         
         2. **Anomaly Detection**
         - Identify any unusual patterns or deviations
         - Flag machines with abnormal performance
         - Highlight unexpected delays or inefficiencies
+        - LIST SPECIFIC ORDER IDs and MACHINE IDs involved
         
         3. **Critical Issues**
         - List top 5 most critical issues requiring immediate attention
+        - Include REAL ORDER IDs and MACHINE IDs from the data
         - Explain the impact of each issue
         - Provide risk assessment
         
@@ -173,25 +176,34 @@ class GenerateRecommendationUseCase:
         - Include expected outcomes for each recommendation
         
         5. **Priority Actions for MCP Execution**
-        CRITICAL INSTRUCTIONS: For any urgent issues requiring immediate action:
         
-        - Format EACH action on a SINGLE LINE
-        - Start with urgency keyword: URGENT, CRITICAL, or PRIORITY
-        - Use EXACTLY this format: [Description]. Action: [command] Parameters: {"key": "value"}
-        - Parameters MUST be valid JSON
+        ⚠️ CRITICAL FORMAT INSTRUCTIONS ⚠️
         
-        Example formats:
-        - URGENT: Order hyvjyhj_1 is blocking production. Action: update_order_priority Parameters: {"order_id": "hyvjyhj_1", "priority": 1}
-        - CRITICAL: Machine Filettatura needs maintenance. Action: update_machine Parameters: {"machine_id": "678e38af83411cc4eac7bf51", "updates": {"macchinarioActive": false}}
+        RULES FOR ACTIONS:
+        1. ONLY use order IDs that you can see in the data (e.g., "hyvjyhj_1", "xyz_order_123")
+        2. ONLY use machine IDs from MongoDB (24-character ObjectIds like "678e38af83411cc4eac7bf51")
+        3. Look for orders with high delays, low priority, or blocking status
+        4. Each action MUST reference REAL data, not examples
         
-        Available commands:
-        - update_order_priority: Change order priority. Parameters: {"order_id": "ID", "priority": NUMBER}
-        - update_order: Update any order field. Parameters: {"order_id": "ID", "updates": {"field": value}}
-        - add_order_note: Add note to order. Parameters: {"order_id": "ID", "note": {"type": "system", "note": "text"}}
-        - update_machine: Update machine settings. Parameters: {"machine_id": "ID", "updates": {"field": value}}
-        - reschedule_orders: Reschedule machine queue. Parameters: {"machine_id": "ID", "schedule": {"priority": "high"}}
+        FORMAT: Each action on ONE line:
+        URGENT: [Real issue from data]. Action: [command] Parameters: {"key": "REAL_VALUE_FROM_DATA"}
         
-       YOU MUST INCLUDE AT LEAST ONE ACTION IN THIS FORMAT IF THERE ARE CRITICAL ISSUES!
+        Example with REAL data (adapt to what you see):
+        URGENT: Order hyvjyhj_1 has 500 hour delay blocking machine TAGLIO. Action: update_order_priority Parameters: {"order_id": "hyvjyhj_1", "priority": 1}
+        
+        Available MCP commands:
+        • update_order_priority - Change order priority (use REAL orderId from data)
+        • update_order - Update any order field (use REAL orderId)
+        • update_machine - Update machine settings (use REAL MongoDB ObjectId)
+        • add_order_note - Add note to order (use REAL orderId)
+        • reschedule_orders - Reschedule machine queue (use REAL machine ObjectId)
+        
+        VERIFICATION before proposing action:
+        ✓ Is this a REAL order/machine ID from the provided data?
+        ✓ Have I verified this ID exists in the context?
+        ✓ Will this action help solve a REAL problem I identified?
+        
+        DO NOT PROPOSE ACTIONS WITH FAKE IDs - ONLY USE IDs YOU CAN SEE IN THE DATA!
         
         6. **Predictive Insights**
         - Predict potential issues in the next 24-48 hours
@@ -200,8 +212,7 @@ class GenerateRecommendationUseCase:
         
         Format your response with clear sections and bullet points for easy reading.
         Use specific numbers and percentages where available.
-        """
-    
+        """    
     def _parse_recommendations(self, analysis: str) -> List[Dict[str, Any]]:
         """Parse recommendations from LLM analysis"""
         recommendations = []
@@ -259,87 +270,150 @@ class GenerateRecommendationUseCase:
         actions = []
         lines = analysis.split("\n")
         
-        # Pattern più flessibile per catturare le azioni
-        action_pattern = r'(URGENT|CRITICAL|PRIORITY):\s*(.+?)\s*Action:\s*(\S+)\s*Parameters:\s*(\{.+?\})'
+        # Multiple patterns to catch different formats
+        patterns = [
+            # Original format
+            r'(URGENT|CRITICAL|PRIORITY):\s*(.+?)\s*Action:\s*(\S+)\s*Parameters:\s*(\{.+?\})',
+            # Format with period before Action
+            r'(URGENT|CRITICAL|PRIORITY):\s*(.+?)\.\s*Action:\s*(\S+)\s*Parameters:\s*(\{.+?\})',
+            # Format with newlines
+            r'(URGENT|CRITICAL|PRIORITY):\s*(.+?)\n?\s*Action:\s*(\S+)\n?\s*Parameters:\s*(\{.+?\})',
+            # More flexible format
+            r'(URGENT|CRITICAL|PRIORITY)[:\s]+(.+?)\s+Action[:\s]+(\S+)\s+Parameters[:\s]+(\{.+?\})'
+        ]
         
         action_count = 0
+        processed_lines = set()  # Track processed lines to avoid duplicates
         
-        for line in lines:
-            # Cerca il pattern nella linea
-            match = re.search(action_pattern, line, re.IGNORECASE)
-            
-            if match:
-                action_count += 1
-                urgency = match.group(1).lower()
-                description = match.group(2).strip()
-                command = match.group(3).strip()
-                params_str = match.group(4).strip()
+        # Try each pattern
+        for pattern in patterns:
+            for i, line in enumerate(lines):
+                if i in processed_lines:
+                    continue
+                    
+                # Also check multi-line by joining with next line
+                extended_line = line
+                if i + 1 < len(lines):
+                    extended_line = line + " " + lines[i + 1]
                 
-                # Log per debug
-                logger.info(f"Found action: urgency={urgency}, command={command}, params={params_str}")
-                
-                try:
-                    # Parse JSON parameters
-                    parameters = json.loads(params_str)
+                for text in [line, extended_line]:
+                    match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
                     
-                    action_dict = {
-                        "id": f"ACTION-{action_count:03d}",
-                        "description": description,
-                        "urgency": "critical" if urgency == "critical" else "high",
-                        "estimated_impact": "High impact on production efficiency",
-                        "action": command,
-                        "parameters": parameters
-                    }
-                    
-                    actions.append(action_dict)
-                    logger.info(f"Successfully parsed action: {action_dict}")
-                    
-                except json.JSONDecodeError as e:
-                    logger.warning(f"Failed to parse JSON parameters: {params_str}, error: {str(e)}")
-                    # Prova a fixare JSON comuni errori
-                    try:
-                        # Sostituisci single quotes con double quotes
-                        fixed_params = params_str.replace("'", '"')
-                        parameters = json.loads(fixed_params)
+                    if match:
+                        processed_lines.add(i)
+                        if i + 1 < len(lines) and text == extended_line:
+                            processed_lines.add(i + 1)
+                        
+                        action_count += 1
+                        urgency = match.group(1).lower()
+                        description = match.group(2).strip().rstrip('.')
+                        command = match.group(3).strip()
+                        params_str = match.group(4).strip()
+                        
+                        logger.info(f"Found action: urgency={urgency}, command={command}, params={params_str}")
+                        
+                        # Try to parse JSON parameters
+                        parameters = None
+                        try:
+                            parameters = json.loads(params_str)
+                        except json.JSONDecodeError:
+                            # Try fixing common JSON errors
+                            try:
+                                # Replace single quotes with double quotes
+                                fixed_params = params_str.replace("'", '"')
+                                parameters = json.loads(fixed_params)
+                            except:
+                                # Try adding quotes to unquoted keys/values
+                                try:
+                                    # Simple regex to add quotes to unquoted strings
+                                    fixed_params = re.sub(r'(\w+):', r'"\1":', params_str)
+                                    fixed_params = re.sub(r':\s*([a-zA-Z_]\w*)', r': "\1"', fixed_params)
+                                    parameters = json.loads(fixed_params)
+                                except:
+                                    logger.warning(f"Failed to parse parameters: {params_str}")
+                        
+                        # Handle special cases for common actions
+                        if not parameters and command == "update_order_priority":
+                            # Try to extract order_id and priority from description
+                            order_match = re.search(r'order[:\s]+(\S+)', description, re.IGNORECASE)
+                            priority_match = re.search(r'priority[:\s]+(\d+)', description, re.IGNORECASE)
+                            if order_match and priority_match:
+                                parameters = {
+                                    "order_id": order_match.group(1),
+                                    "priority": int(priority_match.group(1))
+                                }
                         
                         action_dict = {
                             "id": f"ACTION-{action_count:03d}",
                             "description": description,
-                            "urgency": "critical" if urgency == "critical" else "high",
-                            "estimated_impact": "High impact on production efficiency",
+                            "urgency": urgency,
+                            "estimated_impact": "High" if urgency in ["critical", "urgent"] else "Medium",
                             "action": command,
-                            "parameters": parameters
+                            "parameters": parameters or {}
                         }
                         
-                        actions.append(action_dict)
-                        logger.info(f"Successfully parsed action with fixed JSON: {action_dict}")
-                    except:
-                        # Se non riesce a parsare, aggiungi senza action/parameters
-                        action_dict = {
-                            "id": f"ACTION-{action_count:03d}",
-                            "description": f"{description} (Command: {command})",
-                            "urgency": "critical" if urgency == "critical" else "high",
-                            "estimated_impact": "High impact on production efficiency"
-                        }
-                        actions.append(action_dict)
-                        logger.warning(f"Added action without executable params: {action_dict}")
+                        # Only add if we have valid action and parameters
+                        if action_dict["action"] and action_dict["parameters"]:
+                            actions.append(action_dict)
+                            logger.info(f"Successfully parsed action: {action_dict}")
+                        else:
+                            logger.warning(f"Skipping action without valid command/parameters: {description}")
+                        
+                        break  # Found match, skip other patterns for this line
         
-        # Se non trova azioni con il pattern, prova un approccio più semplice
+        # Fallback: Look for simpler action statements
         if not actions:
-            logger.warning("No actions found with primary pattern, trying fallback approach")
+            logger.warning("No actions found with primary patterns, trying simple format")
             
-            priority_keywords = ["urgent", "critical", "priority", "immediate"]
+            action_keywords = ["update", "change", "modify", "set", "reschedule", "add", "assign"]
+            urgency_keywords = ["urgent", "critical", "priority", "immediately", "asap"]
+            
             for line in lines:
                 line_lower = line.lower()
-                if any(keyword in line_lower for keyword in priority_keywords):
+                
+                # Check if line contains urgency and action keywords
+                has_urgency = any(keyword in line_lower for keyword in urgency_keywords)
+                has_action = any(keyword in line_lower for keyword in action_keywords)
+                
+                if has_urgency and has_action:
+                    # Try to extract meaningful action
                     action_count += 1
-                    action_dict = {
-                        "id": f"ACTION-{action_count:03d}",
-                        "description": line.strip(),
-                        "urgency": "high",
-                        "estimated_impact": "High impact on production efficiency"
-                    }
-                    actions.append(action_dict)
+                    
+                    # Determine action type based on keywords
+                    action_type = None
+                    if "priority" in line_lower and "order" in line_lower:
+                        action_type = "update_order_priority"
+                    elif "machine" in line_lower:
+                        action_type = "update_machine"
+                    elif "order" in line_lower:
+                        action_type = "update_order"
+                    
+                    if action_type:
+                        # Extract IDs using regex
+                        id_match = re.search(r'[a-zA-Z0-9_]{6,}', line)
+                        order_id = id_match.group(0) if id_match else None
+                        
+                        # Extract numbers for priority
+                        num_match = re.search(r'\b(\d+)\b', line)
+                        priority = int(num_match.group(1)) if num_match else 1
+                        
+                        if order_id:
+                            action_dict = {
+                                "id": f"ACTION-{action_count:03d}",
+                                "description": line.strip(),
+                                "urgency": "high",
+                                "estimated_impact": "Medium",
+                                "action": action_type,
+                                "parameters": {
+                                    "order_id": order_id,
+                                    "priority": priority
+                                } if action_type == "update_order_priority" else {
+                                    "order_id": order_id,
+                                    "updates": {}
+                                }
+                            }
+                            actions.append(action_dict)
+                            logger.info(f"Extracted simple action: {action_dict}")
         
         logger.info(f"Total actions extracted: {len(actions)}")
         return actions
