@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from typing import Dict, Any, List
 import logging
+import re
 from ...domain.interfaces import ILLMService, IRecommendationRepository, IContextRepository
 from ...domain.entities import AnalysisRequest, LLMRecommendation
 from ..services import PromptBuilder
@@ -40,36 +41,59 @@ class GenerateRecommendationUseCase:
                 "production status and anomalies"
             )
             
-            # 3. Prepare the analysis prompt
+            # 3. Prepare the analysis prompt - DEFINISCI PROMPT QUI
             prompt = custom_prompt or self._get_default_analysis_prompt()
             
-            # 4. Create analysis request with all context
+            # 4. Add MCP capabilities to context
+            mcp_capabilities = {
+                'mcp_available': True,
+                'executable_actions': [
+                    'update_order_priority',
+                    'update_order',
+                    'update_machine',
+                    'add_order_note',
+                    'reschedule_orders',
+                    'add_machine_staff'
+                ],
+                'note': 'You can propose these actions and they will be executed after user approval'
+            }
+            
+            # 5. Create analysis request with all context
             request = AnalysisRequest(
                 question=prompt,
                 context_data={
                     'csv_analytics': csv_data,
                     'mongodb_context': mongodb_context,
+                    'mcp_capabilities': mcp_capabilities,
                     'analysis_timestamp': datetime.now().isoformat()
                 },
                 include_db_context=True
             )
             
-            # 5. Get LLM analysis
+            # 6. Get LLM analysis
+            logger.info("Sending request to LLM with MCP capabilities in context")
             analysis_result = await self.llm_service.analyze(request)
             
-            # 6. Parse recommendations from analysis
+            # Log per debug
+            logger.info("LLM Analysis Result (first 1000 chars):")
+            logger.info(analysis_result.answer[:1000])
+            
+            # 7. Parse recommendations from analysis
             recommendations = self._parse_recommendations(analysis_result.answer)
             anomalies = self._extract_anomalies(analysis_result.answer)
             priority_actions = self._extract_priority_actions(analysis_result.answer)
             
-            # 7. Extract metrics from CSV data
+            # Log extracted actions
+            logger.info(f"Extracted priority actions: {priority_actions}")
+            
+            # 8. Extract metrics from CSV data
             metrics = self._extract_key_metrics(csv_data)
             
-            # 8. Create recommendation entity
+            # 9. Create recommendation entity
             recommendation = LLMRecommendation(
                 analysis_id=str(uuid.uuid4()),
                 timestamp=datetime.now(),
-                prompt_used=prompt,
+                prompt_used=prompt,  # ORA PROMPT È DEFINITO
                 context_data={
                     'csv_files_analyzed': list(csv_data.keys()),
                     'mongodb_collections': list(mongodb_context.keys()),
@@ -89,7 +113,7 @@ class GenerateRecommendationUseCase:
                 processing_time=(datetime.now() - start_time).total_seconds()
             )
             
-            # 9. Save to MongoDB
+            # 10. Save to MongoDB
             await self.recommendation_repository.save_recommendation(recommendation)
             
             logger.info(f"Generated and saved recommendation: {recommendation.analysis_id}")
@@ -117,9 +141,16 @@ class GenerateRecommendationUseCase:
     def _get_default_analysis_prompt(self) -> str:
         """Get default comprehensive analysis prompt"""
         return """
-        Perform a comprehensive analysis of the current manufacturing state using all available data.
+        CONTEXT: You are analyzing manufacturing data and have the ability to propose executable actions through the Manufacturing Control Platform (MCP). These actions can directly modify the production database to fix issues.
         
-        Your analysis should include:
+        Your proposed actions will be:
+        1. Shown to the user for approval
+        2. Executed automatically upon approval
+        3. Applied directly to the MongoDB database
+        
+        DO NOT say "I cannot modify the database" - you CAN propose modifications through MCP actions!
+        
+        Perform a comprehensive analysis of the current manufacturing state using all available data.
         
         1. **Current Production Status**
         - Overall efficiency and utilization rates
@@ -142,28 +173,24 @@ class GenerateRecommendationUseCase:
         - Include expected outcomes for each recommendation
         
         5. **Priority Actions for MCP Execution**
-       Always propose one or more MCP actions that could address the issues you identified. These actions will be shown to a user for approval, so clearly describe what each action will modify (e.g. which order field or machine setting).
-       IMPORTANT: For any URGENT or CRITICAL issues that require immediate action, you MUST format them EXACTLY as follows:
-       - Start the line with one of these keywords: URGENT, CRITICAL, IMMEDIATE, PRIORITY, or ASAP
-       - Use this EXACT format: <description>. Action: <mcp_command> Parameters: {"param1": "value1", "param2": "value2"}
-       - The Parameters MUST be valid JSON and reflect the exact updates that will occur
-       
-       Available MCP commands:
-       - schedule_order: Insert a new order document. Parameters: {"order": {"orderId": "ID", "codiceArticolo": "CODE", "priority": NUMBER, "quantity": NUMBER, ...}}
-       - add_machine_staff: Add staff to a machine. Parameters: {"machine_id": "MACHINE_ID", "staff": ["OPERATOR_ID1", "OPERATOR_ID2"]}
-       - reschedule_orders: Reschedule machine orders. Parameters: {"machine_id": "MACHINE_ID", "schedule": {"priority": "high", "redistribute": true}}
-       - update_order: Update fields of an order. Parameters: {"order_id": "ORDER_ID", "updates": {"priority": 1}}
-       - update_order_priority: Alias for update_order to modify just the priority field. Parameters: {"order_id": "ORDER_ID", "priority": 1}
-       - update_phase: Update a phase inside an order. Parameters: {"order_id": "ORDER_ID", "phase_id": "PHASE_ID", "updates": {"finishDate": "YYYY-MM-DD"}}
-       - add_order_note: Append a note to an order. Parameters: {"order_id": "ORDER_ID", "note": {"type": "operatore", "note": "text"}}
-       - update_machine: Modify machine settings like queueTargetTime or activation. Parameters: {"machine_id": "MACHINE_ID", "updates": {"queueTargetTime": 12345}}
-       - update_shift: Modify shift or overtime info. Parameters: {"shift_id": "SHIFT_ID", "updates": {"overtimeHours": 2}}
-       
-       MANDATORY EXAMPLES (follow this format exactly):
-       - URGENT: Machine M001 is critically overloaded and needs immediate load balancing. Action: reschedule_orders Parameters: {"machine_id": "M001", "schedule": {"priority": "high", "redistribute": true}}
-       - CRITICAL: Severe staff shortage detected on machine M002 affecting production. Action: add_machine_staff Parameters: {"machine_id": "M002", "staff": ["OP123", "OP124"]}
-       - IMMEDIATE: Order O789 is at risk of missing deadline and must be expedited. Action: schedule_order Parameters: {"order": {"orderId": "O789", "priority": 1, "dueDate": "2025-07-05", "machine": "M003", "quantity": 100}}
-       
+        CRITICAL INSTRUCTIONS: For any urgent issues requiring immediate action:
+        
+        - Format EACH action on a SINGLE LINE
+        - Start with urgency keyword: URGENT, CRITICAL, or PRIORITY
+        - Use EXACTLY this format: [Description]. Action: [command] Parameters: {"key": "value"}
+        - Parameters MUST be valid JSON
+        
+        Example formats:
+        - URGENT: Order hyvjyhj_1 is blocking production. Action: update_order_priority Parameters: {"order_id": "hyvjyhj_1", "priority": 1}
+        - CRITICAL: Machine Filettatura needs maintenance. Action: update_machine Parameters: {"machine_id": "678e38af83411cc4eac7bf51", "updates": {"macchinarioActive": false}}
+        
+        Available commands:
+        - update_order_priority: Change order priority. Parameters: {"order_id": "ID", "priority": NUMBER}
+        - update_order: Update any order field. Parameters: {"order_id": "ID", "updates": {"field": value}}
+        - add_order_note: Add note to order. Parameters: {"order_id": "ID", "note": {"type": "system", "note": "text"}}
+        - update_machine: Update machine settings. Parameters: {"machine_id": "ID", "updates": {"field": value}}
+        - reschedule_orders: Reschedule machine queue. Parameters: {"machine_id": "ID", "schedule": {"priority": "high"}}
+        
        YOU MUST INCLUDE AT LEAST ONE ACTION IN THIS FORMAT IF THERE ARE CRITICAL ISSUES!
         
         6. **Predictive Insights**
@@ -225,58 +252,98 @@ class GenerateRecommendationUseCase:
         return anomalies
     
     def _extract_priority_actions(self, analysis: str) -> List[Dict[str, Any]]:
-        """Extract priority actions from analysis."""
-        import json
+        """Extract priority actions from analysis with improved parsing."""
         import re
+        import json
         
-        actions: List[Dict[str, Any]] = []
+        actions = []
         lines = analysis.split("\n")
         
-        priority_keywords = ["immediate", "urgent", "critical", "priority", "asap", "now"]
+        # Pattern più flessibile per catturare le azioni
+        action_pattern = r'(URGENT|CRITICAL|PRIORITY):\s*(.+?)\s*Action:\s*(\S+)\s*Parameters:\s*(\{.+?\})'
+        
         action_count = 0
         
         for line in lines:
-            line_lower = line.lower()
+            # Cerca il pattern nella linea
+            match = re.search(action_pattern, line, re.IGNORECASE)
             
-            # Check if line contains priority keyword
-            if any(keyword in line_lower for keyword in priority_keywords):
+            if match:
                 action_count += 1
+                urgency = match.group(1).lower()
+                description = match.group(2).strip()
+                command = match.group(3).strip()
+                params_str = match.group(4).strip()
                 
-                # Base action dictionary
-                action_dict = {
-                    "id": f"ACTION-{action_count:03d}",
-                    "description": line.strip(),
-                    "urgency": "critical" if "critical" in line_lower else "high"
-                }
+                # Log per debug
+                logger.info(f"Found action: urgency={urgency}, command={command}, params={params_str}")
                 
-                # Try to extract Action and Parameters using regex
-                # Pattern: Action: <command> Parameters: <json>
-                action_match = re.search(r'Action:\s*([^\s]+)\s*Parameters:\s*(\{[^}]+\})', line, re.IGNORECASE)
-                
-                if action_match:
+                try:
+                    # Parse JSON parameters
+                    parameters = json.loads(params_str)
+                    
+                    action_dict = {
+                        "id": f"ACTION-{action_count:03d}",
+                        "description": description,
+                        "urgency": "critical" if urgency == "critical" else "high",
+                        "estimated_impact": "High impact on production efficiency",
+                        "action": command,
+                        "parameters": parameters
+                    }
+                    
+                    actions.append(action_dict)
+                    logger.info(f"Successfully parsed action: {action_dict}")
+                    
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Failed to parse JSON parameters: {params_str}, error: {str(e)}")
+                    # Prova a fixare JSON comuni errori
                     try:
-                        command = action_match.group(1).strip()
-                        params_str = action_match.group(2).strip()
+                        # Sostituisci single quotes con double quotes
+                        fixed_params = params_str.replace("'", '"')
+                        parameters = json.loads(fixed_params)
                         
-                        # Parse JSON parameters
-                        parameters = json.loads(params_str)
+                        action_dict = {
+                            "id": f"ACTION-{action_count:03d}",
+                            "description": description,
+                            "urgency": "critical" if urgency == "critical" else "high",
+                            "estimated_impact": "High impact on production efficiency",
+                            "action": command,
+                            "parameters": parameters
+                        }
                         
-                        # Add to action dict
-                        action_dict["action"] = command
-                        action_dict["parameters"] = parameters
-                        
-                        logger.info(f"Successfully parsed action: {command} with params: {parameters}")
-                        
-                    except json.JSONDecodeError as e:
-                        logger.error(f"Failed to parse JSON parameters: {params_str} - Error: {e}")
-                    except Exception as e:
-                        logger.error(f"Error parsing action from line: {e}")
-                
-                actions.append(action_dict)
-                logger.info(f"Added priority action: {action_dict}")
+                        actions.append(action_dict)
+                        logger.info(f"Successfully parsed action with fixed JSON: {action_dict}")
+                    except:
+                        # Se non riesce a parsare, aggiungi senza action/parameters
+                        action_dict = {
+                            "id": f"ACTION-{action_count:03d}",
+                            "description": f"{description} (Command: {command})",
+                            "urgency": "critical" if urgency == "critical" else "high",
+                            "estimated_impact": "High impact on production efficiency"
+                        }
+                        actions.append(action_dict)
+                        logger.warning(f"Added action without executable params: {action_dict}")
         
+        # Se non trova azioni con il pattern, prova un approccio più semplice
+        if not actions:
+            logger.warning("No actions found with primary pattern, trying fallback approach")
+            
+            priority_keywords = ["urgent", "critical", "priority", "immediate"]
+            for line in lines:
+                line_lower = line.lower()
+                if any(keyword in line_lower for keyword in priority_keywords):
+                    action_count += 1
+                    action_dict = {
+                        "id": f"ACTION-{action_count:03d}",
+                        "description": line.strip(),
+                        "urgency": "high",
+                        "estimated_impact": "High impact on production efficiency"
+                    }
+                    actions.append(action_dict)
+        
+        logger.info(f"Total actions extracted: {len(actions)}")
         return actions
-    
+
     def _extract_key_metrics(self, csv_data: Dict[str, Any]) -> Dict[str, float]:
         """Extract key metrics from CSV data"""
         metrics = {}
