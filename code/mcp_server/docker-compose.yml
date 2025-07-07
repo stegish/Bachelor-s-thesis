@@ -1,0 +1,16 @@
+mcp_server:
+  build: ../mcp_server
+  container_name: manufacturing_mcp
+  restart: unless-stopped
+  env_file:
+    - .env
+  environment:
+    MONGO_URI: ${MONGO_URI}
+    DATABASE_NAME: ${DATABASE_NAME:-manufacturing_db}
+    AI_MANAGER_DB_URI: ${AI_MANAGER_DB_URI}
+    AI_MANAGER_DB_NAME: ${AI_MANAGER_DB_NAME:-AI-manager}
+    PORT: 5002
+  ports:
+    - "5002:5002"
+  networks:
+    - manufacturing_network

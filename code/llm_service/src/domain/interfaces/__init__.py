@@ -1,5 +1,5 @@
 # File: llm_service/src/domain/interfaces/__init__.py
-
+from .mcp_client import IMCPClient
 from .llm_service import ILLMService
 from .context_repository import IContextRepository
 from .file_processor import IFileProcessor
@@ -15,5 +15,6 @@ __all__ = [
     'IContextRepository', 
     'IFileProcessor', 
     'IMCPService', 
+    'IMCPClient',
     'IRecommendationRepository'
 ]

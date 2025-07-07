@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, HTTPException, Depends
 from dependency_injector.wiring import inject, Provide
 from pydantic import BaseModel
@@ -27,7 +26,7 @@ async def execute_mcp_action(
     """Execute an MCP action"""
     try:
         result = await use_case.execute(
-            action_name=request.action,
+            action=request.action,  # CHANGED: action instead of action_name
             parameters=request.parameters
         )
         
