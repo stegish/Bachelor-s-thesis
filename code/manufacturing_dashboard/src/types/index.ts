@@ -124,6 +124,8 @@ export interface Recommendation {
     order_completion_rate?: number;
     on_time_delivery_rate?: number;
     avg_queue_delay_hours?: number;
+    total_operators_active?: number;
+    bottleneck_count?: number;  
   };
   processing_time: number;
 }
@@ -153,4 +155,14 @@ export enum PhaseStatus {
   QUALITY_CHECK = 3,
   COMPLETED = 4,
   FAILED = 5
+}
+
+// Se non hai già definito l'interfaccia OperatorPerformance, aggiungila:
+export interface OperatorPerformance {
+  operator: string;
+  total_phases: number;
+  avg_cycle_time: number;
+  avg_actual_duration: number;
+  total_quantity: number;
+  efficiency: number | null;
 }

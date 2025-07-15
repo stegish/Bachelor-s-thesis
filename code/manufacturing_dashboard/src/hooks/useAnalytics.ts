@@ -1,243 +1,268 @@
+// File: /code/manufacturing_dashboard/src/hooks/useAnalytics.ts
+// Versione corretta con import di detectAnomalies e sintassi mutation fix
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { analyticsService, llmService, detectAnomalies } from '../services/api';
-import { AnalyticsSummary, Recommendation, Anomaly } from '../types';
+import { analyticsService, llmService, detectAnomalies } from '../services/api'; // Aggiungi detectAnomalies
+import { 
+  AnalyticsSummary, 
+  Anomaly, 
+  Recommendation
+} from '../types';
+import { OperatorPerformance } from '../types';  // Solo questo
 
-// Query keys
-const QUERY_KEYS = {
-  analytics: {
-    summary: ['analytics', 'summary'] as const,
-    allData: ['analytics', 'allData'] as const,
-    status: ['analytics', 'status'] as const,
-    files: ['analytics', 'files'] as const,
-  },
-  recommendations: {
-    latest: ['recommendations', 'latest'] as const,
-    history: (days: number) => ['recommendations', 'history', days] as const,
-    byId: (id: string) => ['recommendations', id] as const,
-  },
-  anomalies: ['anomalies'] as const,
-};
-
-// Analytics hooks
+// Analytics Summary Hook
 export const useAnalyticsSummary = () => {
-  return useQuery(
-    QUERY_KEYS.analytics.summary,
-    analyticsService.getSummary,
-    {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000,
-    }
-  );
+  return useQuery({
+    queryKey: ['analytics-summary'],
+    queryFn: analyticsService.getSummary,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: 60 * 1000, // Refetch every minute
+  });
 };
 
-export const useAnalyticsData = () => {
-  return useQuery(
-    QUERY_KEYS.analytics.allData,
-    analyticsService.getAllData,
-    {
-      staleTime: 5 * 60 * 1000,
-      cacheTime: 10 * 60 * 1000,
-    }
-  );
+// Latest Analytics Data Hook
+export const useLatestAnalytics = () => {
+  return useQuery({
+    queryKey: ['latest-analytics'],
+    queryFn: analyticsService.getAllData,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 60 * 1000,
+  });
 };
 
+// Anomalies Hook
+export const useAnomalies = () => {
+  return useQuery({
+    queryKey: ['anomalies'],
+    queryFn: async () => {
+      try {
+        const analyticsData = await analyticsService.getAllData();
+        return detectAnomalies(analyticsData); // Usa detectAnomalies importata
+      } catch (error) {
+        console.error('Failed to detect anomalies:', error);
+        return [];
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+// Latest Recommendation Hook
+export const useLatestRecommendation = () => {
+  return useQuery({
+    queryKey: ['latest-recommendation'],
+    queryFn: llmService.getLatestRecommendation,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+// Recommendation History Hook
+export const useRecommendationHistory = (days: number = 7) => {
+  return useQuery({
+    queryKey: ['recommendation-history', days],
+    queryFn: () => llmService.getRecommendationHistory(days),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+// Analytics Status Hook
 export const useAnalyticsStatus = () => {
-  return useQuery(
-    QUERY_KEYS.analytics.status,
-    analyticsService.getStatus,
-    {
-      staleTime: 30 * 1000, // 30 seconds
-      refetchInterval: 30 * 1000, // Poll every 30 seconds
-    }
-  );
+  return useQuery({
+    queryKey: ['analytics-status'],
+    queryFn: analyticsService.getStatus,
+    refetchInterval: 30 * 1000, // Every 30 seconds
+  });
 };
 
-export const useRunAnalytics = () => {
+// Generate Analytics Mutation
+export const useGenerateAnalytics = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: (force: boolean = false) => analyticsService.runAnalytics(force),
     onSuccess: () => {
-      // Invalidate all analytics queries to refetch fresh data
-      queryClient.invalidateQueries({ queryKey: ['analytics'] });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.anomalies });
+      queryClient.invalidateQueries({ queryKey: ['analytics-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['latest-analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics-status'] });
+      queryClient.invalidateQueries({ queryKey: ['anomalies'] });
     },
   });
 };
 
-export const useLatestRecommendation = () => {
-  const query = useQuery({
-    queryKey: QUERY_KEYS.recommendations.latest,
-    queryFn: llmService.getLatestRecommendation,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 1,
-  });
-  
-  return query; // React Query già espone refetch
-};
-
-export const useRecommendationHistory = (days: number = 7) => {
-  return useQuery(
-    QUERY_KEYS.recommendations.history(days),
-    () => llmService.getRecommendationHistory(days),
-    {
-      staleTime: 5 * 60 * 1000,
-      cacheTime: 10 * 60 * 1000,
-    }
-  );
-};
-
+// Generate Recommendation Mutation
 export const useGenerateRecommendation = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (customPrompt?: string) => llmService.generateRecommendation(customPrompt),
-    onSuccess: (data) => {
-      // Update the latest recommendation cache
-      queryClient.setQueryData(QUERY_KEYS.recommendations.latest, data);
-      // Invalidate history to include the new recommendation
-      queryClient.invalidateQueries({ 
-        queryKey: ['recommendations', 'history'] 
-      });
+    mutationFn: async (customPrompt?: string) => {
+      return await llmService.generateRecommendation(customPrompt);
     },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['latest-recommendation'] });
+      queryClient.invalidateQueries({ queryKey: ['recommendation-history'] });
+      queryClient.setQueryData(['latest-recommendation'], data);
+    },
+    onError: (error) => {
+      console.error('Failed to generate recommendation:', error);
+    }
   });
 };
 
-// Anomalies hook
-export const useAnomalies = () => {
-  const { data: analyticsData } = useAnalyticsData();
-
-  return useQuery(
-    QUERY_KEYS.anomalies,
-    () => {
-      if (!analyticsData) return [];
-      return detectAnomalies(analyticsData);
-    },
-    {
-      enabled: !!analyticsData,
-      staleTime: 1 * 60 * 1000, // 1 minute
-    }
-  );
-};
-
-// Combined dashboard data hook
-export const useDashboardData = () => {
-  const summary = useAnalyticsSummary();
-  const data = useAnalyticsData();
-  const anomalies = useAnomalies();
-  const recommendation = useLatestRecommendation();
-  const status = useAnalyticsStatus();
-
-  const isLoading = summary.isLoading || data.isLoading;
-  const isError = summary.isError || data.isError;
-  const error = summary.error || data.error;
-
-  return {
-    summary: summary.data,
-    analyticsData: data.data,
-    anomalies: anomalies.data || [],
-    recommendation: recommendation.data,
-    status: status.data,
-    isLoading,
-    isError,
-    error,
-    refetch: () => {
-      summary.refetch();
-      data.refetch();
-      anomalies.refetch();
-      recommendation.refetch();
-      status.refetch();
-    },
-  };
-};
-
+// Execute MCP Action Mutation
 export const useExecuteMcpAction = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (payload: { action: string; parameters: Record<string, any> }) => {
-      try {
-        const response = await llmService.executeMcpAction(payload.action, payload.parameters);
-        return response;
-      } catch (error: any) {
-        // Gestione specifica per errori di validazione
-        if (error.response?.status === 404) {
-          const errorDetail = error.response.data.detail;
-          
-          // Se l'errore contiene suggerimenti di ID validi
-          if (errorDetail.available_order_ids_sample) {
-            throw new Error(
-              `Order "${errorDetail.error}". ` +
-              `Available orders: ${errorDetail.available_order_ids_sample.join(', ')}. ` +
-              `Please refresh the analysis to get current data.`
-            );
-          }
-          
-          throw new Error(errorDetail.message || errorDetail.error || 'Resource not found');
-        }
-        
-        // Altri errori
-        throw new Error(
-          error.response?.data?.message || 
-          error.message || 
-          'Failed to execute action'
-        );
-      }
-    },
-    onError: (error: Error) => {
-      // Log dell'errore per debugging
-      console.error('MCP Action Error:', error);
-    },
+    mutationFn: (params: { action: string; parameters: Record<string, any> }) => 
+      llmService.executeMcpAction(params.action, params.parameters),
     onSuccess: () => {
-      // Invalida le query correlate per forzare il refresh dei dati
-      queryClient.invalidateQueries({ queryKey: ['analytics'] });
-      queryClient.invalidateQueries({ queryKey: ['recommendations'] });
-    }
+      // Refresh data after MCP action
+      queryClient.invalidateQueries({ queryKey: ['analytics-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['latest-analytics'] });
+    },
   });
 };
 
-export const useValidateAction = () => {
-  return useMutation({
-    mutationFn: async (action: { action: string; parameters: Record<string, any> }) => {
-      // Estrai gli ID dall'azione
-      const orderIds = [];
-      const machineIds = [];
-      
-      if (action.parameters.order_id) {
-        orderIds.push(action.parameters.order_id);
-      }
-      if (action.parameters.machine_id) {
-        machineIds.push(action.parameters.machine_id);
-      }
-      
-      // Chiama l'endpoint di validazione
-      const response = await fetch(`${process.env.REACT_APP_MCP_API}/tools/validate_ids`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          order_ids: orderIds,
-          machine_ids: machineIds
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Validation failed');
-      }
-      
-      const result = await response.json();
-      
-      if (!result.all_valid) {
-        const invalidItems = Object.entries(result.validation_results)
-          .filter(([_, valid]) => !valid)
-          .map(([key, _]) => key);
-        
-        throw new Error(
-          `Invalid IDs found: ${invalidItems.join(', ')}. ` +
-          'Please refresh the analysis to get current data.'
-        );
-      }
-      
-      return result;
+// Dashboard Data Hook
+export const useDashboardData = () => {
+  const summaryQuery = useAnalyticsSummary();
+  const analyticsQuery = useLatestAnalytics();
+  const anomaliesQuery = useAnomalies();
+
+  return {
+    summary: summaryQuery.data,
+    analyticsData: analyticsQuery.data,
+    anomalies: anomaliesQuery.data || [],
+    isLoading: summaryQuery.isLoading || analyticsQuery.isLoading || anomaliesQuery.isLoading,
+    isError: summaryQuery.isError || analyticsQuery.isError || anomaliesQuery.isError,
+    error: summaryQuery.error || analyticsQuery.error || anomaliesQuery.error,
+    refetch: () => {
+      summaryQuery.refetch();
+      analyticsQuery.refetch();
+      anomaliesQuery.refetch();
     }
+  };
+};
+
+// Operator Performance Hook
+export const useOperatorPerformance = () => {
+  return useQuery({
+    queryKey: ['operator-performance'],
+    queryFn: async () => {
+      try {
+        const allData = await analyticsService.getAllData();
+        const operatorData = allData?.operator_performance?.data || [];
+        
+        return operatorData.sort((a: OperatorPerformance, b: OperatorPerformance) => 
+          (b.efficiency || 0) - (a.efficiency || 0)
+        );
+      } catch (error) {
+        console.error('Failed to fetch operator performance:', error);
+        return [];
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 60 * 1000,
+  });
+};
+
+// Recommendations with Operators Hook
+export const useRecommendationsWithOperators = () => {
+  const recommendationQuery = useLatestRecommendation();
+  const operatorQuery = useOperatorPerformance();
+  
+  return {
+    recommendation: recommendationQuery.data,
+    operators: operatorQuery.data || [],
+    isLoading: recommendationQuery.isLoading || operatorQuery.isLoading,
+    isError: recommendationQuery.isError || operatorQuery.isError,
+    error: recommendationQuery.error || operatorQuery.error,
+    refetch: () => {
+      recommendationQuery.refetch();
+      operatorQuery.refetch();
+    }
+  };
+};
+
+// Operator Performance by Shift Hook
+export const useOperatorPerformanceByShift = (shift?: string) => {
+  return useQuery({
+    queryKey: ['operator-performance-shift', shift],
+    queryFn: async () => {
+      const allData = await analyticsService.getAllData();
+      const allOperators = allData?.operator_performance?.data || [];
+      
+      if (!shift) return allOperators;
+      
+      return allOperators.filter((op: OperatorPerformance) => 
+        true // Replace with actual shift filtering logic when available
+      );
+    },
+    enabled: true,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+// Top Performers Hook
+export const useTopPerformers = (limit: number = 5) => {
+  return useQuery({
+    queryKey: ['top-performers', limit],
+    queryFn: async () => {
+      const allData = await analyticsService.getAllData();
+      const operators = allData?.operator_performance?.data || [];
+      
+      return operators
+        .sort((a: OperatorPerformance, b: OperatorPerformance) => 
+          (b.efficiency || 0) - (a.efficiency || 0)
+        )
+        .slice(0, limit);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+// Operator Metrics Summary Hook
+export const useOperatorMetricsSummary = () => {
+  return useQuery({
+    queryKey: ['operator-metrics-summary'],
+    queryFn: async () => {
+      const allData = await analyticsService.getAllData();
+      const operators = allData?.operator_performance?.data || [];
+      
+      if (operators.length === 0) {
+        return {
+          totalOperators: 0,
+          avgEfficiency: 0,
+          avgCycleTime: 0,
+          totalQuantityProduced: 0,
+          topPerformer: null,
+          bottomPerformer: null
+        };
+      }
+      
+      const efficiencies = operators.map((op: OperatorPerformance) => op.efficiency || 0);
+      const cycleTimes = operators.map((op: OperatorPerformance) => op.avg_cycle_time || 0);
+      const totalQuantity = operators.reduce((sum: number, op: OperatorPerformance) => 
+        sum + (op.total_quantity || 0), 0
+      );
+      
+      const sortedByEfficiency = [...operators].sort((a: OperatorPerformance, b: OperatorPerformance) => 
+        (b.efficiency || 0) - (a.efficiency || 0)
+      );
+      
+      return {
+        totalOperators: operators.length,
+        avgEfficiency: efficiencies.length > 0 
+          ? efficiencies.reduce((a, b) => a + b, 0) / efficiencies.length 
+          : 0,
+        avgCycleTime: cycleTimes.length > 0 
+          ? cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length 
+          : 0,
+        totalQuantityProduced: totalQuantity,
+        topPerformer: sortedByEfficiency[0] || null,
+        bottomPerformer: sortedByEfficiency[sortedByEfficiency.length - 1] || null
+      };
+    },
+    staleTime: 5 * 60 * 1000,
   });
 };

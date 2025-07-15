@@ -93,6 +93,14 @@ class GenerateRecommendationUseCase:
                 include_db_context=True
             )
             
+            if custom_prompt:
+                request.question = f"{custom_prompt}\n\nPlease format your response with clear sections using ## headers, **bold** for important values, and bullet points for lists."
+            
+            result = await self.llm_service.analyze(request)
+            
+            # Parse the formatted response
+            analysis_text = result.answer
+
             # 8. Get LLM analysis
             logger.info("Sending request to LLM with MCP capabilities in context")
             analysis_result = await self.llm_service.analyze(request)

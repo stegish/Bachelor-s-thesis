@@ -3,12 +3,12 @@ import { Card } from '../common/Card';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ErrorMessage } from '../common/ErrorMessage';
 import { MachineDetailCard } from './MachineDetailCard';
-import { useAnalyticsData } from '../../hooks/useAnalytics';
+import { useDashboardData } from '../../hooks/useAnalytics';
 import { MachineMetrics } from '../../types';
 import { Search, Filter } from 'lucide-react';
 
 export const MachineAnalytics: React.FC = () => {
-  const { data: analyticsData, isLoading, isError, refetch } = useAnalyticsData();
+  const { analyticsData, isLoading, isError, error, refetch } = useDashboardData();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterActive, setFilterActive] = useState<boolean | null>(null);
   const [selectedMachine, setSelectedMachine] = useState<string | null>(null);

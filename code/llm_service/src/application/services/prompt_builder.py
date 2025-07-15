@@ -25,6 +25,17 @@ class PromptBuilder:
     - Operator performance metrics
     - Queue analysis and bottleneck identification
 
+    FORMATTING INSTRUCTIONS:
+    - Use ## for main section headers
+    - Use ### for subsection headers
+    - Use **bold** for emphasis on important metrics or findings
+    - Use bullet points (-) for lists
+    - Use numbered lists (1. 2. 3.) for sequential steps
+    - Include emoji icons for visual clarity (🔍 for findings, 📊 for metrics, 🎯 for actions, ⚠️ for warnings)
+    - Separate sections with clear line breaks
+    - When mentioning specific values, always bold them: **75.2%**, **12 hours**
+
+
     When analyzing data:
     1. Provide specific, actionable insights
     2. Identify patterns and anomalies
